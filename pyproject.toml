@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "samsung-remote-blocker"
+version = "0.1.0"
+description = "Neutralize streaming shortcut buttons on Samsung TV remotes"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.32,<3",
+    "samsungtvws>=3.0.7,<4",
+    "websocket-client>=1.6,<2",  # imported directly for its exception types
+]
+
+[project.scripts]
+samsung-remote-blocker = "samsung_remote_blocker.__main__:main"
+
+[tool.setuptools]
+packages = ["samsung_remote_blocker"]
+
+[tool.setuptools.package-data]
+samsung_remote_blocker = ["apps.json"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "UP", "SIM", "I"]
+
+[tool.coverage.run]
+source = ["samsung_remote_blocker"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true
+skip_covered = true

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
+  <title id="title">What happens when a blocked button is pressed</title>
+  <desc id="desc">Netflix opens, is detected within a quarter second, Plex is brought back, Play is sent, and Netflix is closed.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#0b1020"/>
+      <stop offset="1" stop-color="#141033"/>
+    </linearGradient>
+    <linearGradient id="track" gradientUnits="userSpaceOnUse" x1="120" y1="0" x2="1040" y2="0">
+      <stop offset="0" stop-color="#e50914"/>
+      <stop offset="0.3" stop-color="#6d5dfc"/>
+      <stop offset="0.55" stop-color="#e5a00d"/>
+      <stop offset="0.8" stop-color="#22c55e"/>
+      <stop offset="1" stop-color="#94a3b8"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="330" rx="20" fill="url(#bg)"/>
+
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="60" y="58" fill="#ffffff" font-size="26" font-weight="700">Someone presses the Netflix button</text>
+    <text x="60" y="88" fill="#8b90b8" font-size="17">Typical timings on a 2024 DU8000 with the default settings.</text>
+
+    <line x1="120" y1="170" x2="1040" y2="170" stroke="url(#track)" stroke-width="5" stroke-linecap="round"/>
+
+    <!-- 1 -->
+    <g transform="translate(120 170)">
+      <circle r="30" fill="#0b1020" stroke="#e50914" stroke-width="4"/>
+      <rect x="-14" y="-10" width="28" height="20" rx="4" fill="#e50914"/>
+      <text y="5" fill="#fff" font-size="12" font-weight="800" text-anchor="middle">N</text>
+      <text y="68" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Netflix opens</text>
+      <text y="92" fill="#8b90b8" font-size="15" text-anchor="middle">0 s</text>
+    </g>
+
+    <!-- 2 -->
+    <g transform="translate(355 170)">
+      <circle r="30" fill="#0b1020" stroke="#6d5dfc" stroke-width="4"/>
+      <circle cx="-3" cy="-3" r="10" fill="none" stroke="#c4c8ff" stroke-width="3"/>
+      <path d="M4 4L12 12" stroke="#c4c8ff" stroke-width="3" stroke-linecap="round"/>
+      <text y="68" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Detected</text>
+      <text y="92" fill="#8b90b8" font-size="15" text-anchor="middle">within 0.25 s</text>
+    </g>
+
+    <!-- 3 -->
+    <g transform="translate(590 170)">
+      <circle r="30" fill="#0b1020" stroke="#e5a00d" stroke-width="4"/>
+      <path d="M-8 -11L-8 11L6 0z" fill="#e5a00d" transform="translate(2 0)"/>
+      <path d="M-12 -11L-4 0L-12 11" fill="none" stroke="#e5a00d" stroke-width="3" stroke-linejoin="round" transform="translate(-2 0)"/>
+      <text y="68" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle"><tspan fill="#e5a00d">Plex</tspan> brought back</text>
+      <text y="92" fill="#8b90b8" font-size="15" text-anchor="middle">same title, same spot</text>
+    </g>
+
+    <!-- 4 -->
+    <g transform="translate(825 170)">
+      <circle r="30" fill="#0b1020" stroke="#22c55e" stroke-width="4"/>
+      <path d="M-7 -12L-7 12L12 0z" fill="#22c55e"/>
+      <text y="68" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Play pressed</text>
+      <text y="92" fill="#8b90b8" font-size="15" text-anchor="middle">if it was playing</text>
+    </g>
+
+    <!-- 5 -->
+    <g transform="translate(1040 170)">
+      <circle r="30" fill="#0b1020" stroke="#94a3b8" stroke-width="4"/>
+      <path d="M-9 -9L9 9M9 -9L-9 9" stroke="#94a3b8" stroke-width="4" stroke-linecap="round"/>
+      <text y="68" fill="#ffffff" font-size="17" font-weight="700" text-anchor="middle">Netflix closed</text>
+      <text y="92" fill="#8b90b8" font-size="15" text-anchor="middle">about 3 s in</text>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,5 @@
+*
+!pyproject.toml
+!README.md
+!samsung_remote_blocker/
+samsung_remote_blocker/__pycache__/

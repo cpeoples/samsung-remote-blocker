@@ -1,0 +1,41 @@
+# Full example stack with every setting inline. Works with
+# `docker compose -f stack.example.yml up -d` and as a Portainer stack.
+# Only TV_IP is required; delete what you don't use.
+#
+# First run, once each:
+#   docker compose -f stack.example.yml run --rm blocker pair         # accept the prompt on the TV
+#   docker compose -f stack.example.yml run --rm blocker plex-login   # optional, for auto-resume
+# Both tokens are saved in the data volume.
+name: samsung-remote-blocker
+
+services:
+  blocker:
+    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.0
+    restart: unless-stopped
+    environment:
+      TV_IP: 192.168.0.110
+      BLOCKED_APPS: netflix,disney,prime,hulu,youtube
+      ALLOWED_APPS: plex
+      # Without PLEX_URL the blocker still returns to Plex, but doesn't press Play.
+      PLEX_URL: http://192.168.0.20:32400
+      # Defaults shown.
+      POLL_SECONDS: "0.25"
+      PLEX_POLL_SECONDS: "1"
+      RESUME_WINDOW: "3"
+      RESUME_DELAY: "2"
+      TZ: America/New_York  # log timestamps
+      # Already have a Plex token? Use the secret below instead of plex-login.
+      # PLEX_TOKEN_FILE: /run/secrets/plex_token
+    # secrets:
+    #   - plex_token
+    volumes:
+      - data:/data
+
+# The file holds just the token. The container runs as uid 1000, so on Linux:
+#   chown 1000 plex_token.txt && chmod 600 plex_token.txt
+# secrets:
+#   plex_token:
+#     file: ./plex_token.txt
+
+volumes:
+  data:

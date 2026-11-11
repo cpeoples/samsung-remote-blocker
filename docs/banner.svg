@@ -1,0 +1,127 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
+  <title id="title">Samsung Remote Blocker</title>
+  <desc id="desc">A Samsung TV remote whose Netflix, Prime Video, Disney+ and Hulu buttons are blocked.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#070b18"/>
+      <stop offset="1" stop-color="#171240"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.2" cy="0.5" r="0.42">
+      <stop offset="0" stop-color="#4f7cff" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#4f7cff" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#fff" stroke-opacity="0.035"/>
+    </pattern>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3a3d45"/>
+      <stop offset="0.12" stop-color="#25272d"/>
+      <stop offset="0.85" stop-color="#1a1b20"/>
+      <stop offset="1" stop-color="#101114"/>
+    </linearGradient>
+    <linearGradient id="key" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2e3037"/>
+      <stop offset="1" stop-color="#1c1d22"/>
+    </linearGradient>
+    <radialGradient id="ok" cx="0.4" cy="0.35" r="0.7">
+      <stop offset="0" stop-color="#34373f"/>
+      <stop offset="1" stop-color="#1d1e23"/>
+    </radialGradient>
+    <filter id="shadow" x="-50%" y="-20%" width="200%" height="140%">
+      <feDropShadow dx="10" dy="18" stdDeviation="14" flood-color="#000" flood-opacity="0.6"/>
+    </filter>
+    <g id="blocked">
+      <circle r="9" fill="#ef4444" stroke="#111216" stroke-width="2.5"/>
+      <path d="M-3.6 -3.6L3.6 3.6M3.6 -3.6L-3.6 3.6" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/>
+    </g>
+  </defs>
+
+  <rect width="1200" height="420" rx="24" fill="url(#bg)"/>
+  <rect width="1200" height="420" rx="24" fill="url(#grid)"/>
+  <rect width="1200" height="420" rx="24" fill="url(#glow)"/>
+
+  <!-- Remote, modeled on the SolarCell remote. Drawn at 140x500, scaled to fit. -->
+  <g transform="translate(196 40) rotate(-12 70 220) scale(0.8)" filter="url(#shadow)">
+    <rect width="140" height="410" rx="48" fill="url(#body)" stroke="#43464f" stroke-width="1.5"/>
+    <path d="M14 70V350" stroke="#fff" stroke-opacity="0.06" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="70" cy="20" r="2" fill="#0c0d10"/>
+
+    <!-- power -->
+    <circle cx="40" cy="46" r="13" fill="url(#key)" stroke="#44474f"/>
+    <path d="M36 41.5a6.5 6.5 0 1 0 8 0" fill="none" stroke="#ff5a52" stroke-width="2" stroke-linecap="round"/>
+    <path d="M40 38.5v6.5" stroke="#ff5a52" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- 123 with color keys in the same button, voice to its right -->
+    <rect x="22" y="74" width="44" height="30" rx="12" fill="url(#key)" stroke="#44474f"/>
+    <text x="44" y="88" fill="#cfd2da" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="9" font-weight="700" text-anchor="middle">123</text>
+    <circle cx="35" cy="96" r="2.2" fill="#ef4444"/>
+    <circle cx="41" cy="96" r="2.2" fill="#22c55e"/>
+    <circle cx="47" cy="96" r="2.2" fill="#eab308"/>
+    <circle cx="53" cy="96" r="2.2" fill="#3b82f6"/>
+    <circle cx="100" cy="89" r="13" fill="url(#key)" stroke="#44474f"/>
+    <rect x="97" y="82" width="6" height="10" rx="3" fill="#cfd2da"/>
+    <path d="M94 89a6 6 0 0 0 12 0M100 95v2.5" fill="none" stroke="#cfd2da" stroke-width="1.6" stroke-linecap="round"/>
+
+    <!-- d-pad -->
+    <circle cx="70" cy="168" r="50" fill="#141519" stroke="#4a4d56" stroke-width="1.5"/>
+    <circle cx="70" cy="168" r="44" fill="none" stroke="#fff" stroke-opacity="0.05" stroke-width="8"/>
+    <circle cx="70" cy="168" r="23" fill="url(#ok)" stroke="#4a4d56"/>
+
+    <!-- back, home, play/pause -->
+    <g fill="url(#key)" stroke="#44474f">
+      <circle cx="32" cy="246" r="14"/>
+      <circle cx="70" cy="246" r="14"/>
+      <circle cx="108" cy="246" r="14"/>
+    </g>
+    <g fill="none" stroke="#cfd2da" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M27 243h7a4 4 0 0 1 0 8h-3M27 243l3 -3M27 243l3 3"/>
+      <path d="M64 247.5l6 -5.5l6 5.5M66 246v6h8v-6"/>
+    </g>
+    <!-- play/pause -->
+    <path d="M101 241v10l7 -5z" fill="#cfd2da"/>
+    <path d="M111 241v10M115 241v10" stroke="#cfd2da" stroke-width="2" stroke-linecap="round"/>
+
+    <g transform="translate(0 -30)">
+    <!-- VOL / CH: one very thin horizontal toggle, each half tips up or down -->
+    <rect x="22" y="314" width="96" height="6" rx="3" fill="#0c0d10" stroke="#3a3d45" stroke-width="0.8"/>
+    <rect x="23.5" y="315.2" width="93" height="3.6" rx="1.8" fill="#4a4d56"/>
+    <path d="M70 314.5v5" stroke="#0c0d10" stroke-width="1.2"/>
+    <g stroke="#8d919c" stroke-width="1.6" stroke-linecap="round" fill="none" stroke-linejoin="round">
+      <path d="M46 301v6M43 304h6"/>
+      <path d="M43 330h6"/>
+      <path d="M91 306l3 -3l3 3"/>
+      <path d="M91 328l3 3l3 -3"/>
+    </g>
+
+    <!-- app shortcut buttons -->
+    <g font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-weight="800" text-anchor="middle">
+      <rect x="16" y="344" width="52" height="26" rx="8" fill="#000" stroke="#33353c"/>
+      <text x="42" y="361" fill="#e50914" font-size="10" letter-spacing="0.3">NETFLIX</text>
+      <rect x="72" y="344" width="52" height="26" rx="8" fill="#0f1720" stroke="#33353c"/>
+      <text x="98" y="358" fill="#ffffff" font-size="8.5">prime</text>
+      <path d="M88 362.5q10 4 20 0" fill="none" stroke="#00a8e1" stroke-width="1.6" stroke-linecap="round"/>
+      <rect x="16" y="376" width="52" height="26" rx="8" fill="#0b1f6b" stroke="#33353c"/>
+      <text x="42" y="393" fill="#ffffff" font-size="10">Disney+</text>
+      <rect x="72" y="376" width="52" height="26" rx="8" fill="#0b0c0f" stroke="#33353c"/>
+      <text x="98" y="393" fill="#1ce783" font-size="11">hulu</text>
+    </g>
+    <use href="#blocked" x="66" y="346"/>
+    <use href="#blocked" x="122" y="346"/>
+    <use href="#blocked" x="66" y="378"/>
+    <use href="#blocked" x="122" y="378"/>
+    </g>
+  </g>
+
+  <!-- Copy -->
+  <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+    <text x="460" y="165" fill="#ffffff" font-size="56" font-weight="800" letter-spacing="-1.5">Samsung Remote Blocker</text>
+    <text x="463" y="212" fill="#c7cdff" font-size="24">Accidentally press <tspan fill="#e50914" font-weight="700">Netflix</tspan>, <tspan fill="#00a8e1" font-weight="700">Prime</tspan>, <tspan fill="#3d7bff" font-weight="700">Disney+</tspan> or <tspan fill="#1ce783" font-weight="700">Hulu</tspan></text>
+    <text x="463" y="243" fill="#c7cdff" font-size="24">and land back in <tspan fill="#e5a00d" font-weight="700">Plex</tspan>.</text>
+    <text x="463" y="281" fill="#8a90b8" font-size="19">No root, no firmware hacks. One container on your network.</text>
+  </g>
+  <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17">
+    <rect x="463" y="306" width="300" height="46" rx="10" fill="#070b18" stroke="#34386a"/>
+    <text x="484" y="335" fill="#7c8cff">$</text>
+    <text x="504" y="335" fill="#e5e7ff">docker compose up -d</text>
+  </g>
+</svg>

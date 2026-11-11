@@ -1,0 +1,22 @@
+name: samsung-remote-blocker
+
+services:
+  blocker:
+    image: ghcr.io/cpeoples/samsung-remote-blocker:latest
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    # Shell variables override .env, so `TV_IP=192.168.0.110 docker compose up -d` also works.
+    environment:
+      TV_IP: ${TV_IP:-}
+    volumes:
+      - data:/data
+      # To reuse the token of a Plex Media Server on this host, mount its Preferences.xml
+      # and set PLEX_PREFERENCES=/plex/Preferences.xml.
+      # - "/path/to/plex/config/Library/Application Support/Plex Media Server/Preferences.xml:/plex/Preferences.xml:ro"
+    # Only needed for `discover` without --scan (SSDP multicast). Linux hosts only.
+    # network_mode: host
+
+volumes:
+  data:
