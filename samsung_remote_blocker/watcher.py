@@ -45,6 +45,7 @@ class Watcher:
         self.last_allowed: str | None = None
         self.last_playing: float | None = None
         self._plex_left: float | None = None
+        self._plex_state: str | None = None
         self._last_plex_poll: float | None = None
         self._tv_failures = 0
         self._plex_online = True
@@ -151,6 +152,9 @@ class Watcher:
         if not self._plex_online:
             log.info("Plex server is reachable again")
             self._plex_online = True
+        if state != self._plex_state:
+            log.debug("Plex reports %s for %s", state or "no session", self.tv.ip)
+            self._plex_state = state
         if state in ("playing", "buffering"):
             self.last_playing = now
 
@@ -172,19 +176,26 @@ class Watcher:
                     "%s launched -> back to %s%s", name, self.allowed[target], " (resuming)" if resume else ""
                 )
                 self.tv.launch(target)
-                if resume:
-                    self._resume()
             else:
                 log.info("%s launched -> Home", name)
                 self.tv.send_key("KEY_HOME")
-            self.sleep(CLOSE_DELAY)
-            self.tv.close(app_id)
         except TV_ERRORS as e:
-            log.warning("Recovery from %s failed (%s); sending Home", name, e)
+            log.warning("Leaving %s failed (%s); sending Home", name, e)
             try:
                 self.tv.send_key("KEY_HOME")
             except TV_ERRORS as e:
                 log.error("Sending Home failed too (%s)", e)
+            self.last_playing = None
+            return
+        # The blocked app is off screen now, so a failure past here must not send the viewer Home.
+        try:
+            if resume:
+                self._resume()
+            self.sleep(CLOSE_DELAY)
+            log.debug("Closing %s", name)
+            self.tv.close(app_id)
+        except TV_ERRORS as e:
+            log.warning("Cleanup after %s failed (%s)", name, e)
         self.last_playing = None
 
     def _resume(self) -> None:

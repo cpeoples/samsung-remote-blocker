@@ -20,6 +20,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 PORT = 8002
 # How long the pairing prompt waits for Allow.
 PAIR_TIMEOUT = 60.0
+# Launch and close can stall for seconds while a heavy app like Disney+ is loading.
+ACTION_TIMEOUT = 10.0
 # Everything a TV call can raise: REST, WebSocket, socket and samsungtvws handshake errors.
 TV_ERRORS = (requests.RequestException, websocket.WebSocketException, ConnectionFailure, OSError)
 
@@ -47,10 +49,10 @@ class TV:
         return r.json()
 
     def launch(self, app_id: str) -> None:
-        self._http.post(self._apps_url + app_id, timeout=self.timeout).raise_for_status()
+        self._http.post(self._apps_url + app_id, timeout=ACTION_TIMEOUT).raise_for_status()
 
     def close(self, app_id: str) -> None:
-        self._http.delete(self._apps_url + app_id, timeout=self.timeout).raise_for_status()
+        self._http.delete(self._apps_url + app_id, timeout=ACTION_TIMEOUT).raise_for_status()
 
     def installed_apps(self) -> list[dict]:
         """Not answered by all firmware; may time out."""
@@ -68,9 +70,13 @@ class TV:
             remote.open()
 
     def send_key(self, key: str) -> None:
+        # The TV drops an idle WebSocket within a minute or two, so retry once on a fresh one.
         try:
             self._remote.send_key(key)
         except TV_ERRORS:
-            # samsungtvws keeps a dead socket after a TV restart; drop it so the next call reconnects.
             self._remote.close()
-            raise
+            try:
+                self._remote.send_key(key)
+            except TV_ERRORS:
+                self._remote.close()
+                raise

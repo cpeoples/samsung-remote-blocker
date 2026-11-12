@@ -55,10 +55,17 @@ class TVTest(unittest.TestCase):
         self.ws.app_list.return_value = None
         self.assertEqual(self.tv.installed_apps(), [])
 
-    def test_failed_key_drops_the_socket(self):
+    def test_failed_key_is_retried_once_on_a_fresh_socket(self):
         self.ws.send_key.side_effect = OSError("broken pipe")
         with self.assertRaises(OSError):
             self.tv.send_key("KEY_HOME")
+        self.assertEqual(self.ws.send_key.call_count, 2)
+        self.assertEqual(self.ws.close.call_count, 2)
+
+    def test_stale_socket_recovers_on_retry(self):
+        self.ws.send_key.side_effect = [OSError("broken pipe"), None]
+        self.tv.send_key("KEY_PLAY")
+        self.assertEqual(self.ws.send_key.call_count, 2)
         self.ws.close.assert_called_once()
 
     def test_key(self):

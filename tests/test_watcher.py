@@ -182,6 +182,20 @@ class WatcherTest(unittest.TestCase):
             w.step()
         self.assertEqual(tv.calls, [("key", "KEY_HOME")])
 
+    def test_failed_close_does_not_send_home_from_plex(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv)
+        w.step()
+
+        def fail(app_id):
+            raise requests.ReadTimeout()
+
+        tv.close = fail
+        tv.visible = {NETFLIX}
+        with self.assertLogs("samsung_remote_blocker.watcher", "WARNING"):
+            w.step()
+        self.assertEqual(tv.calls, [("launch", PLEX)])
+
     def test_forgets_uninstalled_ids_only_when_tv_answers(self):
         tv = FakeTV(installed=set())
         w, _ = watcher(tv)
