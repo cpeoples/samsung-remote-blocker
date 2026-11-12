@@ -19,6 +19,9 @@ log = logging.getLogger(__name__)
 CLOSE_DELAY = 1.0
 # Consecutive failed polls before the TV is reported offline; single drops are routine.
 OFFLINE_AFTER = 3
+# Play presses while waiting for Plex to resume, and the wait after each.
+RESUME_TRIES = 4
+RESUME_CHECK_SECONDS = 1.5
 
 
 class Watcher:
@@ -154,8 +157,7 @@ class Watcher:
                 )
                 self.tv.launch(target)
                 if resume:
-                    self.sleep(self.settings.resume_delay)
-                    self.tv.send_key("KEY_PLAY")  # Play, not toggle, so it can't pause by mistake
+                    self._resume()
             else:
                 log.info("%s launched -> Home", name)
                 self.tv.send_key("KEY_HOME")
@@ -168,3 +170,16 @@ class Watcher:
             except TV_ERRORS as e:
                 log.error("Sending Home failed too (%s)", e)
         self.last_playing = None
+
+    def _resume(self) -> None:
+        """Plex can ignore keys right after it comes back, so press Play until it plays."""
+        self.sleep(self.settings.resume_delay)
+        for _ in range(RESUME_TRIES):
+            self.tv.send_key("KEY_PLAY")  # Play, not toggle, so a repeat can't pause it
+            self.sleep(RESUME_CHECK_SECONDS)
+            try:
+                if self.plex.player_state(self.tv.ip) in ("playing", "buffering"):
+                    return
+            except requests.RequestException:
+                return
+        log.warning("Plex didn't resume after %d presses of Play", RESUME_TRIES)

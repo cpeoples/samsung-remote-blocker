@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
   <title id="title">Samsung Remote Blocker</title>
-  <desc id="desc">A Samsung TV remote whose Netflix, Prime Video, Disney+ and Hulu buttons are blocked.</desc>
+  <desc id="desc">A Samsung TV remote whose Netflix, Prime Video, Disney+, Hulu and YouTube buttons are blocked.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#070b18"/>
@@ -42,8 +42,8 @@
 
   <!-- Remote, modeled on the SolarCell remote. Drawn at 140x500, scaled to fit. -->
   <g transform="translate(196 40) rotate(-12 70 220) scale(0.8)" filter="url(#shadow)">
-    <rect width="140" height="410" rx="48" fill="url(#body)" stroke="#43464f" stroke-width="1.5"/>
-    <path d="M14 70V350" stroke="#fff" stroke-opacity="0.06" stroke-width="3" stroke-linecap="round"/>
+    <rect width="140" height="445" rx="48" fill="url(#body)" stroke="#43464f" stroke-width="1.5"/>
+    <path d="M14 70V385" stroke="#fff" stroke-opacity="0.06" stroke-width="3" stroke-linecap="round"/>
     <circle cx="70" cy="20" r="2" fill="#0c0d10"/>
 
     <!-- power -->
@@ -104,18 +104,26 @@
       <text x="42" y="393" fill="#ffffff" font-size="10">Disney+</text>
       <rect x="72" y="376" width="52" height="26" rx="8" fill="#0b0c0f" stroke="#33353c"/>
       <text x="98" y="393" fill="#1ce783" font-size="11">hulu</text>
+      <rect x="16" y="408" width="52" height="26" rx="8" fill="#0b0c0f" stroke="#33353c"/>
+      <rect x="21" y="416" width="13" height="10" rx="3" fill="#ff0033"/>
+      <path d="M26 418.5v5l4 -2.5z" fill="#fff"/>
+      <text x="50.5" y="424.5" fill="#ffffff" font-size="8" letter-spacing="-0.2">YouTube</text>
+      <rect x="72" y="408" width="52" height="26" rx="8" fill="#0b0c0f" stroke="#33353c"/>
+      <text x="98" y="418.5" fill="#cfd2da" font-size="5" letter-spacing="0.8">SAMSUNG</text>
+      <text x="98" y="428.5" fill="#ffffff" font-size="8.5">TV <tspan fill="#5aa0ff">Plus</tspan></text>
     </g>
     <use href="#blocked" x="66" y="346"/>
     <use href="#blocked" x="122" y="346"/>
     <use href="#blocked" x="66" y="378"/>
     <use href="#blocked" x="122" y="378"/>
+    <use href="#blocked" x="66" y="410"/>
     </g>
   </g>
 
   <!-- Copy -->
   <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
     <text x="460" y="165" fill="#ffffff" font-size="56" font-weight="800" letter-spacing="-1.5">Samsung Remote Blocker</text>
-    <text x="463" y="212" fill="#c7cdff" font-size="24">Accidentally press <tspan fill="#e50914" font-weight="700">Netflix</tspan>, <tspan fill="#00a8e1" font-weight="700">Prime</tspan>, <tspan fill="#3d7bff" font-weight="700">Disney+</tspan> or <tspan fill="#1ce783" font-weight="700">Hulu</tspan></text>
+    <text x="463" y="212" fill="#c7cdff" font-size="24">Accidentally press <tspan fill="#e50914" font-weight="700">Netflix</tspan>, <tspan fill="#00a8e1" font-weight="700">Prime</tspan>, <tspan fill="#3d7bff" font-weight="700">Disney+</tspan>, <tspan fill="#1ce783" font-weight="700">Hulu</tspan> or <tspan fill="#ff3355" font-weight="700">YouTube</tspan></text>
     <text x="463" y="243" fill="#c7cdff" font-size="24">and land back in <tspan fill="#e5a00d" font-weight="700">Plex</tspan>.</text>
     <text x="463" y="281" fill="#8a90b8" font-size="19">No root, no firmware hacks. One container on your network.</text>
   </g>

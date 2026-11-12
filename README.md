@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="Samsung Remote Blocker: accidentally press Netflix, Prime, Disney+ or Hulu and land back in Plex" width="100%">
+  <img src="docs/banner.svg" alt="Samsung Remote Blocker: accidentally press Netflix, Prime, Disney+, Hulu or YouTube and land back in Plex" width="100%">
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e" alt="MIT license"></a>
 </p>
 
-Samsung remotes have Netflix, Prime Video, Disney+ and Hulu buttons that a kid, a guest, or the couch cushion will press in the middle of your movie. Samsung Remote Blocker watches the TV from a server on your network. When a blocked app opens, it puts you back where you were, presses Play if something was playing, and closes the blocked app.
+Samsung remotes have Netflix, Prime Video, Disney+, Hulu and YouTube buttons that a kid, a guest, or the couch cushion will press in the middle of your movie. Samsung Remote Blocker watches the TV from a server on your network. When a blocked app opens, it puts you back where you were, presses Play if something was playing, and closes the blocked app.
 
 It doesn't root the TV or install anything on it; it only talks to the TV's local network API.
 
@@ -73,7 +73,7 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 | Variable | Default | |
 |---|---|---|
 | `TV_IP` | **required** | The TV's IP address. It must be an IP, since Plex identifies the TV by IP |
-| `BLOCKED_APPS` | `netflix,disney,prime,hulu` | Slugs from [`apps.json`](samsung_remote_blocker/apps.json) or raw `id:Name` pairs |
+| `BLOCKED_APPS` | `netflix,disney,prime,hulu,youtube` | Slugs from [`apps.json`](samsung_remote_blocker/apps.json) or raw `id:Name` pairs |
 | `ALLOWED_APPS` | `plex` | Apps to return to, same format |
 | `PLEX_URL` | | e.g. `http://192.168.0.20:32400`. Without it, Plex comes back but isn't resumed |
 | `PLEX_TOKEN` | | See [Plex token](#plex-token) |
@@ -82,7 +82,7 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 | `POLL_SECONDS` | `0.25` | TV poll interval. Lower means a shorter flash and more requests |
 | `PLEX_POLL_SECONDS` | `1` | Plex poll interval while Plex is in front |
 | `RESUME_WINDOW` | `3` | Resume if Plex was playing within this many seconds |
-| `RESUME_DELAY` | `2` | Wait before pressing Play, so Plex is in front |
+| `RESUME_DELAY` | `2` | Wait before the first Play press. Play is repeated until Plex reports playback |
 | `TZ` | UTC | Time zone for log timestamps, e.g. `America/New_York` |
 | `DATA_DIR` | `/data` in Docker, `.` otherwise | Where tokens are stored |
 | `PUID` / `PGID` | owner of `PLEX_PREFERENCES`, else `1000` | User the container runs as. Rarely needed; see [Permissions](#permissions) |
@@ -181,9 +181,9 @@ Tokens go in the current directory unless `DATA_DIR` is set.
 |---|---|---|
 | `netflix` | Netflix | UN65DU8000FXZA |
 | `prime` | Prime Video | UN65DU8000FXZA |
-| `disney` | Disney+ | |
-| `hulu` | Hulu | |
-| `youtube` | YouTube | |
+| `disney` | Disney+ | UN65DU8000FXZA |
+| `hulu` | Hulu | UN65DU8000FXZA |
+| `youtube` | YouTube | UN65DU8000FXZA |
 | `plex` | Plex | UN65DU8000FXZA |
 
 Any other app works by ID, e.g. `BLOCKED_APPS=netflix,3201234567890:Some App`. To add an app to the list, or to verify one on your model:
@@ -216,7 +216,7 @@ curl -s -H 'Accept: application/json' -H "X-Plex-Token: $PLEX_TOKEN" "$PLEX_URL/
   | jq '.MediaContainer.Metadata[].Player | {address, state}'
 ```
 
-If it says `(resuming)` but stays paused, try `key KEY_PLAY` by hand, or raise `RESUME_DELAY`.
+If it says `(resuming)` but stays paused, the log also says `Plex didn't resume after 4 presses of Play`. Check that `key KEY_PLAY` works by hand, then raise `RESUME_DELAY`.
 
 </details>
 
@@ -239,7 +239,7 @@ To pick the user yourself, set `PUID` and `PGID`. If you set `user:` in the stac
 ## Limitations
 
 - It's not a true disable; the blocked app is visible for a moment.
-- Samsung TV Plus is built in and may not be visible to the applications API.
+- Samsung TV Plus is built into the TV and doesn't show up in the applications API (none of the published IDs answer on a DU8000), so its button can't be blocked yet. If you find an ID that works with `app <id>`, please open an issue.
 - HDMI inputs and live TV aren't apps, so there's nothing to return to; the blocker goes Home.
 - Auto-resume supports Plex only.
 
@@ -274,4 +274,4 @@ Pushes to `main` publish `linux/amd64` and `linux/arm64` images to `ghcr.io/cpeo
 
 ---
 
-<sub>Not affiliated with or endorsed by Samsung, Plex, Netflix, Amazon, Disney or Hulu. App names identify the buttons being blocked; the remote in the banner is an illustration.</sub>
+<sub>Not affiliated with or endorsed by Samsung, Plex, Netflix, Amazon, Disney, Hulu or Google. App names identify the buttons being blocked; the remote in the banner is an illustration.</sub>

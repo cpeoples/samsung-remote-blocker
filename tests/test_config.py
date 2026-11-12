@@ -32,6 +32,7 @@ class LoadTest(unittest.TestCase):
         s = load({})
         self.assertIsNone(s.tv_ip)
         self.assertIn("3201907018807", s.blocked)
+        self.assertIn("111299001912", s.blocked)  # YouTube
         self.assertEqual(s.poll_seconds, 0.25)
         with self.assertRaises(ConfigError):
             s.require_tv_ip()

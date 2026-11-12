@@ -13,7 +13,7 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-DEFAULT_BLOCKED = "netflix,disney,prime,hulu"
+DEFAULT_BLOCKED = "netflix,disney,prime,hulu,youtube"
 DEFAULT_ALLOWED = "plex"
 
 

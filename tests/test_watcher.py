@@ -48,13 +48,14 @@ class FakePlex:
     def __init__(self, state="playing", status=None):
         self.state = state
         self.status = status
+        self.queue = []  # states reported before `state`
 
     def player_state(self, ip):
         if self.status:
             response = requests.Response()
             response.status_code = self.status
             raise requests.HTTPError(response=response)
-        return self.state
+        return self.queue.pop(0) if self.queue else self.state
 
 
 class Clock:
@@ -80,6 +81,26 @@ class WatcherTest(unittest.TestCase):
         tv.visible = {NETFLIX}
         w.step()
         self.assertEqual(tv.calls, [("launch", PLEX), ("key", "KEY_PLAY"), ("close", NETFLIX)])
+
+    def test_presses_play_again_until_plex_plays(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing"))
+        w.step()
+        w.plex.queue = ["paused", "paused"]
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertEqual(tv.calls.count(("key", "KEY_PLAY")), 3)
+
+    def test_gives_up_resuming_after_a_few_presses(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing"))
+        w.step()
+        w.plex.state = "paused"
+        tv.visible = {NETFLIX}
+        with self.assertLogs("samsung_remote_blocker.watcher", "WARNING"):
+            w.step()
+        self.assertEqual(tv.calls.count(("key", "KEY_PLAY")), 4)
+        self.assertEqual(tv.calls[-1], ("close", NETFLIX))
 
     def test_does_not_resume_when_paused(self):
         tv = FakeTV(visible={PLEX})
