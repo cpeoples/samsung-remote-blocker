@@ -33,6 +33,7 @@ class LoadTest(unittest.TestCase):
         self.assertIsNone(s.tv_ip)
         self.assertIn("3201907018807", s.blocked)
         self.assertIn("111299001912", s.blocked)  # YouTube
+        self.assertEqual(set(s.allowed.values()), {"Plex", "Jellyfin"})
         self.assertEqual(s.poll_seconds, 0.25)
         with self.assertRaises(ConfigError):
             s.require_tv_ip()
@@ -62,6 +63,12 @@ class LoadTest(unittest.TestCase):
 
     def test_token_is_not_in_repr(self):
         self.assertNotIn("s3cret", repr(load({"PLEX_TOKEN": "s3cret"})))
+        self.assertNotIn("s3cret", repr(load({"JELLYFIN_API_KEY": "s3cret"})))
+
+    def test_jellyfin_settings(self):
+        s = load({"JELLYFIN_URL": "http://jf:8096/", "JELLYFIN_API_KEY": " key "})
+        self.assertEqual((s.jellyfin_url, s.jellyfin_api_key), ("http://jf:8096", "key"))
+        self.assertIsNone(load({}).jellyfin_url)
 
     def test_plex_url_trailing_slash(self):
         self.assertEqual(load({"PLEX_URL": "http://pms:32400/"}).plex_url, "http://pms:32400")

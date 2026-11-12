@@ -1,7 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="330" viewBox="0 0 1200 330" role="img" aria-labelledby="title desc">
   <title id="title">Example log output</title>
-  <desc id="desc">docker compose logs showing the blocker sending Netflix and Hulu back to Plex and resuming playback.</desc>
-  <rect width="1200" height="300" rx="16" fill="#0b0e14" stroke="#262b38"/>
+  <desc id="desc">docker compose logs showing the blocker sending Netflix back to Plex, restoring a position Plex cleared, and sending Hulu back to Jellyfin, resuming playback each time.</desc>
+  <rect width="1200" height="330" rx="16" fill="#0b0e14" stroke="#262b38"/>
   <path d="M0 16a16 16 0 0 1 16 -16H1184a16 16 0 0 1 16 16V44H0z" fill="#161a23"/>
   <circle cx="28" cy="22" r="7" fill="#ff5f57"/>
   <circle cx="52" cy="22" r="7" fill="#febc2e"/>
@@ -9,12 +9,13 @@
   <text x="600" y="27" fill="#7d8496" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" text-anchor="middle">docker compose logs -f</text>
 
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="16" xml:space="preserve">
-    <text x="32" y="84"><tspan fill="#5c6478">20:14:02</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Watching TV 192.168.0.110 | blocking Disney+, Hulu, Netflix, Prime Video, YouTube | allowed </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan></text>
-    <text x="32" y="114"><tspan fill="#5c6478">20:14:02</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Now watching </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan><tspan> </tspan><tspan fill="#d6dae6" opacity="0.8">&#x2588;</tspan></text>
-    <text x="32" y="144"><tspan fill="#5c6478">20:31:47</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#ff6b6b">Netflix launched</tspan><tspan fill="#d6dae6"> -&gt; back to </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan><tspan> </tspan><tspan fill="#4ade80">(resuming)</tspan></text>
-    <text x="32" y="174"><tspan fill="#5c6478">20:58:10</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#ff6b6b">Hulu launched</tspan><tspan fill="#d6dae6"> -&gt; back to </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan><tspan> </tspan><tspan fill="#4ade80">(resuming)</tspan></text>
-    <text x="32" y="204"><tspan fill="#5c6478">23:02:55</tspan><tspan fill="#fbbf24"> WARNING </tspan><tspan fill="#d6dae6">TV unreachable (ConnectionError); retrying</tspan></text>
-    <text x="32" y="234"><tspan fill="#5c6478">07:41:09</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">TV is reachable again</tspan></text>
-    <text x="32" y="264"><tspan fill="#5c6478">07:41:09</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Now watching </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan><tspan> </tspan><tspan fill="#d6dae6" opacity="0.8">&#x2588;</tspan></text>
+    <text x="32" y="84"><tspan fill="#5c6478">20:14:02</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Watching TV 192.168.0.110 | blocking Disney+, Hulu, Netflix, Prime Video, YouTube | allowed </tspan><tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan><tspan fill="#d6dae6">, </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan></text>
+    <text x="32" y="114"><tspan fill="#5c6478">20:14:02</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Resuming </tspan><tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan><tspan fill="#d6dae6"> and </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan></text>
+    <text x="32" y="144"><tspan fill="#5c6478">20:14:03</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Now watching </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan></text>
+    <text x="32" y="174"><tspan fill="#5c6478">20:55:47</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#ff6b6b">Netflix launched</tspan><tspan fill="#d6dae6"> -&gt; back to </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan><tspan> </tspan><tspan fill="#4ade80">(resuming)</tspan></text>
+    <text x="32" y="204"><tspan fill="#5c6478">20:55:51</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#e5a00d" font-weight="700">Plex</tspan><tspan fill="#d6dae6"> marked it watched; restored the position to </tspan><tspan fill="#4ade80">41:32</tspan></text>
+    <text x="32" y="234"><tspan fill="#5c6478">21:20:15</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#d6dae6">Now watching </tspan><tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan></text>
+    <text x="32" y="264"><tspan fill="#5c6478">21:38:10</tspan><tspan fill="#7c8cff"> INFO </tspan><tspan fill="#ff6b6b">Hulu launched</tspan><tspan fill="#d6dae6"> -&gt; back to </tspan><tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan><tspan> </tspan><tspan fill="#4ade80">(resuming)</tspan></text>
+    <text x="32" y="294"><tspan fill="#5c6478">23:02:55</tspan><tspan fill="#fbbf24"> WARNING </tspan><tspan fill="#d6dae6">TV unreachable (ConnectionError); retrying</tspan><tspan> </tspan><tspan fill="#d6dae6" opacity="0.8">&#x2588;</tspan></text>
   </g>
 </svg>

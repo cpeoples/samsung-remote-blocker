@@ -44,6 +44,32 @@ class PlexTest(unittest.TestCase):
         self.assertNotIn("secret", url)
         self.assertEqual(self.plex._http.headers["X-Plex-Token"], "secret")
 
+    def test_session_has_the_item_and_position(self):
+        SESSIONS["MediaContainer"]["Metadata"][1].update(ratingKey="42", viewOffset=2_492_000)
+        try:
+            self.assertEqual(self.plex.session("192.168.0.110"), ("playing", "42", 2_492_000))
+        finally:
+            for k in ("ratingKey", "viewOffset"):
+                SESSIONS["MediaContainer"]["Metadata"][1].pop(k)
+
+    def test_restores_a_cleared_position(self):
+        self.plex._http.get.side_effect = [
+            response(body={"MediaContainer": {"Metadata": [{"viewCount": 1}]}}),
+            response(),
+            response(),
+        ]
+        self.assertTrue(self.plex.restore_position("42", 2_492_000))
+        unscrobble, progress = self.plex._http.get.call_args_list[1:]
+        self.assertTrue(unscrobble.args[0].endswith("/:/unscrobble"))
+        self.assertEqual(progress.kwargs["params"]["time"], 2_492_000)
+        self.assertEqual(progress.kwargs["params"]["key"], "42")
+
+    def test_leaves_a_kept_position_alone(self):
+        kept = {"MediaContainer": {"Metadata": [{"viewOffset": 5}]}}
+        self.plex._http.get.return_value = response(body=kept)
+        self.assertFalse(self.plex.restore_position("42", 2_492_000))
+        self.plex._http.get.assert_called_once()
+
 
 class LinkDeviceTest(unittest.TestCase):
     def link(self, polls):

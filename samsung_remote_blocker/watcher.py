@@ -1,16 +1,16 @@
-"""The watch loop: evict blocked apps, return to the last allowed app, resume Plex."""
+"""The watch loop: evict blocked apps, return to the last allowed app, resume playback."""
 
 from __future__ import annotations
 
 import logging
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 
 import requests
 from samsungtvws.exceptions import UnauthorizedError
 
-from .config import PLEX_APP_IDS, Settings
-from .plex import Plex
+from .config import Settings
+from .media import MediaServer
 from .tv import PAIR_TIMEOUT, TV, TV_ERRORS
 
 log = logging.getLogger(__name__)
@@ -19,10 +19,10 @@ log = logging.getLogger(__name__)
 CLOSE_DELAY = 1.0
 # Consecutive failed polls before the TV is reported offline; single drops are routine.
 OFFLINE_AFTER = 3
-# Plex checks while resuming, and the wait between them.
+# Server checks while resuming, and the wait between them.
 RESUME_TRIES = 6
 RESUME_CHECK_SECONDS = 1.5
-# Past this many seconds since leaving Plex, a blocked app was opened on purpose; don't resume.
+# Past this many seconds since leaving the media app, a blocked app was opened on purpose; don't resume.
 LAUNCH_GRACE = 30.0
 
 
@@ -31,24 +31,25 @@ class Watcher:
         self,
         settings: Settings,
         tv: TV,
-        plex: Plex | None = None,
+        servers: Mapping[str, MediaServer] | None = None,
         clock: Callable[[], float] = time.monotonic,
         sleep: Callable[[float], None] = time.sleep,
     ):
         self.settings = settings
         self.tv = tv
-        self.plex = plex
+        self.servers = dict(servers or {})  # app ID -> the server that knows what it's playing
         self.clock = clock
         self.sleep = sleep
         self.blocked = dict(settings.blocked)
         self.allowed = dict(settings.allowed)
         self.last_allowed: str | None = None
         self.last_playing: float | None = None
-        self._plex_left: float | None = None
-        self._plex_state: str | None = None
-        self._last_plex_poll: float | None = None
+        self._media_left: float | None = None
+        self._media_state: str | None = None
+        self._position: tuple[str | None, int] | None = None  # (item ID, offset ms) last seen playing
+        self._last_media_poll: float | None = None
         self._tv_failures = 0
-        self._plex_online = True
+        self._offline_servers: set[str] = set()
         self._pair_attempted = False
 
     def run(self) -> None:
@@ -59,9 +60,10 @@ class Watcher:
             ", ".join(sorted(set(self.allowed.values()))),
         )
         if not self.settings.resume:
-            log.info("RESUME is off; will return to Plex but not press Play")
-        elif not self.plex:
-            log.info("PLEX_URL or Plex token not set; will return to Plex but not resume")
+            log.info("RESUME is off; will return to the last allowed app but not press Play")
+        else:
+            names = sorted({s.name for s in self.servers.values()})
+            log.info("Resuming %s", " and ".join(names) if names else "nothing; no media server is set up")
         while True:
             try:
                 self.step()
@@ -98,6 +100,10 @@ class Watcher:
             return
         log.info("Paired with the TV")
 
+    @property
+    def server(self) -> MediaServer | None:
+        return self.servers.get(self.last_allowed) if self.last_allowed else None
+
     def step(self) -> None:
         statuses = {app_id: self.tv.app(app_id) for app_id in {**self.allowed, **self.blocked}}
         self._forget_uninstalled(statuses)
@@ -105,15 +111,16 @@ class Watcher:
         for app_id, name in self.allowed.items():
             if (statuses.get(app_id) or {}).get("visible") and self.last_allowed != app_id:
                 self.last_allowed = app_id
+                self._position = None
                 log.info("Now watching %s", name)
 
-        # Slow apps like Prime Video take seconds to show up, so remember when Plex left the screen.
-        plex_visible = any((statuses.get(a) or {}).get("visible") for a in PLEX_APP_IDS)
-        if plex_visible:
-            self._plex_left = None
-            self._track_plex()
-        elif self._plex_left is None and self.last_allowed in PLEX_APP_IDS:
-            self._plex_left = self.clock()
+        # Slow apps like Prime Video take seconds to show up, so remember when the media app left the screen.
+        if self.server:
+            if (statuses.get(self.last_allowed) or {}).get("visible"):
+                self._media_left = None
+                self._track_playback()
+            elif self._media_left is None:
+                self._media_left = self.clock()
 
         for app_id, name in self.blocked.items():
             if (statuses.get(app_id) or {}).get("visible"):
@@ -129,43 +136,43 @@ class Watcher:
             for app_id in [a for a in apps if a in statuses and statuses[a] is None]:
                 log.info("%s (%s) is not installed; ignoring that ID", apps.pop(app_id), app_id)
 
-    def _track_plex(self) -> None:
+    def _track_playback(self) -> None:
         now = self.clock()
-        if not (self.plex and self.last_allowed in PLEX_APP_IDS):
+        server = self.server
+        if (
+            self._last_media_poll is not None
+            and now - self._last_media_poll < self.settings.plex_poll_seconds
+        ):
             return
-        if self._last_plex_poll is not None and now - self._last_plex_poll < self.settings.plex_poll_seconds:
-            return
-        self._last_plex_poll = now
+        self._last_media_poll = now
         try:
-            state = self.plex.player_state(self.tv.ip)
+            session = server.session(self.tv.ip)
         except requests.RequestException as e:
-            if self._plex_online:
+            if server.name not in self._offline_servers:
                 status = getattr(e.response, "status_code", None)
-                reason = (
-                    "rejected the token; run plex-login again"
-                    if status == 401
-                    else f"unreachable ({type(e).__name__})"
-                )
-                log.warning("Plex server %s; resume disabled until it's back", reason)
-                self._plex_online = False
+                reason = server.auth_hint if status == 401 else f"unreachable ({type(e).__name__})"
+                log.warning("%s server %s; resume disabled until it's back", server.name, reason)
+                self._offline_servers.add(server.name)
             return
-        if not self._plex_online:
-            log.info("Plex server is reachable again")
-            self._plex_online = True
-        if state != self._plex_state:
-            log.debug("Plex reports %s for %s", state or "no session", self.tv.ip)
-            self._plex_state = state
+        if server.name in self._offline_servers:
+            log.info("%s server is reachable again", server.name)
+            self._offline_servers.discard(server.name)
+        state = session.state if session else None
+        if state != self._media_state:
+            log.debug("%s reports %s for %s", server.name, state or "no session", self.tv.ip)
+            self._media_state = state
         if state in ("playing", "buffering"):
             self.last_playing = now
+            if session.offset_ms or not self._position or self._position[0] != session.item_id:
+                self._position = (session.item_id, session.offset_ms)
 
     def _evict(self, app_id: str, name: str) -> None:
         target = self.last_allowed
         now = self.clock()
-        left = self._plex_left if self._plex_left is not None else now
+        left = self._media_left if self._media_left is not None else now
         resume = (
             self.settings.resume
-            and self.plex is not None
-            and target in PLEX_APP_IDS
+            and self.server is not None
             and self.last_playing is not None
             and left - self.last_playing <= self.settings.resume_window
             and now - left <= LAUNCH_GRACE
@@ -197,21 +204,40 @@ class Watcher:
         except TV_ERRORS as e:
             log.warning("Cleanup after %s failed (%s)", name, e)
         self.last_playing = None
+        self._position = None
 
     def _resume(self) -> None:
-        """Press Play until Plex says playing twice in a row; its first report can be stale."""
+        """Press Play until the server says playing twice in a row; its first report can be stale."""
+        server = self.server
         self.sleep(self.settings.resume_delay)
+        self._restore_position(server)
         confirmed = 0
         for attempt in range(1, RESUME_TRIES + 1):
             if confirmed == 0:
                 self.tv.send_key("KEY_PLAY")  # Play, not toggle, so a repeat can't pause it
             self.sleep(RESUME_CHECK_SECONDS)
             try:
-                state = self.plex.player_state(self.tv.ip)
+                state = server.player_state(self.tv.ip)
             except requests.RequestException:
                 return
-            log.debug("Resume check %d/%d: Plex reports %s", attempt, RESUME_TRIES, state)
+            log.debug("Resume check %d/%d: %s reports %s", attempt, RESUME_TRIES, server.name, state)
             confirmed = confirmed + 1 if state in ("playing", "buffering") else 0
             if confirmed == 2:
                 return
-        log.warning("Plex didn't resume; set RESUME_DELAY higher, or RESUME=false to turn it off")
+        log.warning("%s didn't resume; set RESUME_DELAY higher, or RESUME=false to turn it off", server.name)
+
+    def _restore_position(self, server: MediaServer) -> None:
+        # Stopping past the watched point clears Plex's resume point, so Play would start over.
+        if not self._position or not self._position[0] or not self._position[1]:
+            return
+        item_id, offset_ms = self._position
+        try:
+            if server.restore_position(item_id, offset_ms):
+                log.info("%s marked it watched; restored the position to %s", server.name, _clock(offset_ms))
+        except requests.RequestException as e:
+            log.warning("Couldn't restore the %s position (%s)", server.name, type(e).__name__)
+
+
+def _clock(ms: int) -> str:
+    minutes, seconds = divmod(ms // 1000, 60)
+    return f"{minutes}:{seconds:02d}"

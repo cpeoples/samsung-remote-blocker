@@ -10,7 +10,34 @@ from unittest import mock
 
 import requests
 
-from samsung_remote_blocker.__main__ import main
+from samsung_remote_blocker.__main__ import main, media_servers
+from samsung_remote_blocker.config import load
+
+
+class MediaServersTest(unittest.TestCase):
+    def test_each_media_app_gets_its_server(self):
+        servers = media_servers(
+            load(
+                {
+                    "PLEX_URL": "http://pms",
+                    "PLEX_TOKEN": "t",
+                    "JELLYFIN_URL": "http://jf",
+                    "JELLYFIN_API_KEY": "k",
+                }
+            )
+        )
+        self.assertEqual(servers["3201512006963"].name, "Plex")
+        self.assertEqual(servers["3202007021208"].name, "Jellyfin")
+
+    def test_only_configured_servers(self):
+        self.assertEqual(set(media_servers(load({"JELLYFIN_URL": "http://jf"}))), set())
+        servers = media_servers(load({"JELLYFIN_URL": "http://jf", "JELLYFIN_API_KEY": "k"}))
+        self.assertEqual({s.name for s in servers.values()}, {"Jellyfin"})
+
+    def test_resume_off_needs_no_servers(self):
+        self.assertEqual(
+            media_servers(load({"PLEX_URL": "http://pms", "PLEX_TOKEN": "t", "RESUME": "false"})), {}
+        )
 
 
 class CliTest(unittest.TestCase):

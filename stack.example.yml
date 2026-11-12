@@ -14,9 +14,12 @@ services:
     environment:
       TV_IP: 192.168.0.110
       BLOCKED_APPS: netflix,disney,prime,hulu,youtube
-      ALLOWED_APPS: plex
+      ALLOWED_APPS: plex,jellyfin
       # Without PLEX_URL the blocker still returns to Plex, but doesn't press Play.
       PLEX_URL: http://192.168.0.20:32400
+      # Same for Jellyfin; the key is from Dashboard > API Keys.
+      # JELLYFIN_URL: http://192.168.0.20:8096
+      # JELLYFIN_API_KEY: your-key
       # Defaults shown.
       POLL_SECONDS: "0.25"
       PLEX_POLL_SECONDS: "1"

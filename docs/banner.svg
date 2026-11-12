@@ -124,7 +124,7 @@
   <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
     <text x="460" y="165" fill="#ffffff" font-size="56" font-weight="800" letter-spacing="-1.5">Samsung Remote Blocker</text>
     <text x="463" y="212" fill="#c7cdff" font-size="24">Accidentally press <tspan fill="#e50914" font-weight="700">Netflix</tspan>, <tspan fill="#00a8e1" font-weight="700">Prime</tspan>, <tspan fill="#3d7bff" font-weight="700">Disney+</tspan>, <tspan fill="#1ce783" font-weight="700">Hulu</tspan> or <tspan fill="#ff3355" font-weight="700">YouTube</tspan></text>
-    <text x="463" y="243" fill="#c7cdff" font-size="24">and land back in <tspan fill="#e5a00d" font-weight="700">Plex</tspan>.</text>
+    <text x="463" y="243" fill="#c7cdff" font-size="24">and land back in <tspan fill="#e5a00d" font-weight="700">Plex</tspan> or <tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan>.</text>
     <text x="463" y="281" fill="#8a90b8" font-size="19">No root, no firmware hacks. One container on your network.</text>
   </g>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17">

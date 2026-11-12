@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
   <title id="title">Architecture</title>
-  <desc id="desc">The blocker container on your server polls the TV's REST API, sends keys over WebSocket, and reads playback state from Plex Media Server. Nothing connects to it.</desc>
+  <desc id="desc">The blocker container on your server polls the TV's REST API, sends keys over WebSocket, and reads playback state from Plex or Jellyfin. Nothing connects to it.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#0b1020"/>
@@ -44,12 +44,19 @@
       <text x="160" y="86" fill="#8b90b8" font-size="14" text-anchor="middle">tested on a 2024 DU8000</text>
     </g>
 
-    <!-- Plex -->
+    <!-- Media servers -->
     <g transform="translate(820 296)">
-      <rect width="320" height="80" rx="12" fill="#1a1405" stroke="#e5a00d" stroke-width="2"/>
-      <path d="M28 20l14 20l-14 20h10l14 -20l-14 -20z" fill="#e5a00d"/>
-      <text x="72" y="37" fill="#ffffff" font-size="19" font-weight="700"><tspan fill="#e5a00d">Plex</tspan> Media Server</text>
-      <text x="72" y="60" fill="#c9a24a" font-size="14">optional, for auto-resume</text>
+      <rect width="154" height="80" rx="12" fill="#1a1405" stroke="#e5a00d" stroke-width="2"/>
+      <path d="M18 22l12 18l-12 18h9l12 -18l-12 -18z" fill="#e5a00d"/>
+      <text x="50" y="38" fill="#e5a00d" font-size="19" font-weight="700">Plex</text>
+      <text x="50" y="60" fill="#c9a24a" font-size="13">optional</text>
+    </g>
+    <g transform="translate(986 296)">
+      <rect width="154" height="80" rx="12" fill="#170d1d" stroke="#aa5cc3" stroke-width="2"/>
+      <path d="M30 20L14 54h32z" fill="none" stroke="#aa5cc3" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M30 34l-6 12h12z" fill="#00a4dc"/>
+      <text x="56" y="38" fill="#aa5cc3" font-size="19" font-weight="700">Jellyfin</text>
+      <text x="56" y="60" fill="#a585b5" font-size="13">optional</text>
     </g>
 
     <!-- links -->
@@ -62,7 +69,7 @@
     <text x="614" y="270" fill="#6b7199" font-size="13" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">WebSocket :8002, paired once</text>
 
     <path d="M420 320C600 320 640 336 808 336" fill="none" stroke="#e5a00d" stroke-width="2.5" marker-end="url(#headAmber)"/>
-    <text x="614" y="358" fill="#e9c46a" font-size="15" text-anchor="middle">was this TV playing?</text>
-    <text x="614" y="380" fill="#8c7440" font-size="13" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">GET /status/sessions</text>
+    <text x="614" y="358" fill="#e9c46a" font-size="15" text-anchor="middle">was this TV playing, and where?</text>
+    <text x="614" y="380" fill="#8c7440" font-size="13" text-anchor="middle" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">/status/sessions  /Sessions</text>
   </g>
 </svg>

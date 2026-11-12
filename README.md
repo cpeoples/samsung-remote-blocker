@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="Samsung Remote Blocker: accidentally press Netflix, Prime, Disney+, Hulu or YouTube and land back in Plex" width="100%">
+  <img src="docs/banner.svg" alt="Samsung Remote Blocker: accidentally press Netflix, Prime, Disney+, Hulu or YouTube and land back in Plex or Jellyfin" width="100%">
 </p>
 
 <p align="center">
@@ -16,7 +16,7 @@ Samsung remotes have Netflix, Prime Video, Disney+, Hulu and YouTube buttons tha
 It doesn't root the TV or install anything on it; it only talks to the TV's local network API.
 
 <p align="center">
-  <img src="docs/how-it-works.svg" alt="Netflix opens, is detected within 0.25 s, Plex is brought back, Play is pressed, Netflix is closed" width="100%">
+  <img src="docs/how-it-works.svg" alt="Netflix opens, is detected within 0.25 s, Plex or Jellyfin is brought back, Play is pressed, Netflix is closed" width="100%">
 </p>
 
 > [!NOTE]
@@ -44,6 +44,8 @@ docker compose run --rm blocker discover --scan 192.168.0.0/24
 docker compose run --rm blocker plex-login
 ```
 
+**Optional: Jellyfin auto-resume.** Create a key under **Dashboard › API Keys** in Jellyfin, then set `JELLYFIN_URL` and `JELLYFIN_API_KEY` in `.env`.
+
 **Start it, then press Allow on the TV.** The first time the blocker reaches the TV it asks to pair; the TV shows an Allow prompt for 60 seconds. If nobody answers, blocking still works, and it asks again the next time the TV comes on. The token is saved in the `data` volume. (`docker compose run --rm blocker pair` does the same thing by hand.)
 
 ```bash
@@ -51,7 +53,7 @@ docker compose up -d && docker compose logs -f
 ```
 
 <p align="center">
-  <img src="docs/logs.svg" alt="Log output: Netflix launched, back to Plex, resuming" width="100%">
+  <img src="docs/logs.svg" alt="Log output: Netflix sent back to Plex with the position restored, Hulu sent back to Jellyfin, both resuming" width="100%">
 </p>
 
 To update: `docker compose pull && docker compose up -d`.
@@ -59,10 +61,12 @@ To update: `docker compose pull && docker compose up -d`.
 ## How it works
 
 <p align="center">
-  <img src="docs/architecture.svg" alt="The container polls the TV over HTTPS, sends keys over WebSocket, and asks Plex Media Server whether the TV was playing" width="100%">
+  <img src="docs/architecture.svg" alt="The container polls the TV over HTTPS, sends keys over WebSocket, and asks Plex or Jellyfin whether the TV was playing" width="100%">
 </p>
 
-Every 0.25 s the blocker asks the TV which apps are on screen, and remembers the last allowed one. When a blocked app shows up, it launches the allowed app again, or goes Home if there wasn't one. If Plex reported this TV as playing in the last few seconds, it presses Play. Then it closes the blocked app.
+Every 0.25 s the blocker asks the TV which apps are on screen, and remembers the last allowed one. When a blocked app shows up, it launches the allowed app again, or goes Home if there wasn't one. If Plex or Jellyfin reported this TV as playing in the last few seconds, it presses Play. Then it closes the blocked app.
+
+Plex on the TV stops playback when another app opens, and near the end of an episode it can mark the episode watched and forget your place. The blocker remembers the position and puts it back before pressing Play. Jellyfin pauses instead, so nothing is lost.
 
 When the TV is off, the blocker logs it once and keeps retrying, then picks up where it left off when the TV comes back.
 
@@ -72,20 +76,22 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 
 | Variable | Default | |
 |---|---|---|
-| `TV_IP` | **required** | The TV's IP address. It must be an IP, since Plex identifies the TV by IP |
+| `TV_IP` | **required** | The TV's IP address. It must be an IP, since Plex and Jellyfin identify the TV by IP |
 | `BLOCKED_APPS` | `netflix,disney,prime,hulu,youtube` | Slugs from [`apps.json`](samsung_remote_blocker/apps.json) or raw `id:Name` pairs |
-| `ALLOWED_APPS` | `plex` | Apps to return to, same format |
+| `ALLOWED_APPS` | `plex,jellyfin` | Apps to return to, same format |
 | `PLEX_URL` | | e.g. `http://192.168.0.20:32400`. Without it, Plex comes back but isn't resumed |
 | `PLEX_TOKEN` | | See [Plex token](#plex-token) |
 | `PLEX_TOKEN_FILE` | `/data/.plex-token` | Where the Plex token is read from and where `plex-login` saves it |
 | `PLEX_PREFERENCES` | | Path to a Plex Media Server `Preferences.xml` |
+| `JELLYFIN_URL` | | e.g. `http://192.168.0.20:8096`. Without it, Jellyfin comes back but isn't resumed |
+| `JELLYFIN_API_KEY` | | From **Dashboard › API Keys** in Jellyfin |
 | `POLL_SECONDS` | `0.25` | TV poll interval. Lower means a shorter flash and more requests |
-| `PLEX_POLL_SECONDS` | `1` | Plex poll interval while Plex is in front |
-| `RESUME_WINDOW` | `3` | Resume if Plex was playing within this many seconds |
-| `RESUME_DELAY` | `2` | Wait before the first Play press. Play is repeated until Plex reports playback |
-| `RESUME` | `true` | `false` brings Plex back without pressing Play |
+| `PLEX_POLL_SECONDS` | `1` | Media server poll interval while Plex or Jellyfin is in front |
+| `RESUME_WINDOW` | `3` | Resume if playback was seen within this many seconds |
+| `RESUME_DELAY` | `2` | Wait before the first Play press. Play is repeated until the server reports playback |
+| `RESUME` | `true` | `false` brings the app back without pressing Play |
 | `TZ` | UTC | Time zone for log timestamps, e.g. `America/New_York` |
-| `LOG_LEVEL` | `info` | `debug` adds what Plex reported while resuming |
+| `LOG_LEVEL` | `info` | `debug` adds what the server reported while resuming |
 | `DATA_DIR` | `/data` in Docker, `.` otherwise | Where tokens are stored |
 | `PUID` / `PGID` | owner of `PLEX_PREFERENCES`, else `1000` | User the container runs as. Rarely needed; see [Permissions](#permissions) |
 
@@ -187,6 +193,7 @@ Tokens go in the current directory unless `DATA_DIR` is set.
 | `hulu` | Hulu | UN65DU8000FXZA |
 | `youtube` | YouTube | UN65DU8000FXZA |
 | `plex` | Plex | UN65DU8000FXZA |
+| `jellyfin` | Jellyfin | UN65DU8000FXZA |
 
 Any other app works by ID, e.g. `BLOCKED_APPS=netflix,3201234567890:Some App`. To add an app to the list, or to verify one on your model:
 
@@ -223,6 +230,30 @@ If it says `(resuming)` but stays paused, the log also says `Plex didn't resume`
 </details>
 
 <details>
+<summary><b>Jellyfin comes back paused</b></summary>
+
+If the log line doesn't end in `(resuming)`, check that `JELLYFIN_URL` and `JELLYFIN_API_KEY` are set, and that the TV's session shows its IP while something plays:
+
+```bash
+curl -s -H "Authorization: MediaBrowser Token=\"$JELLYFIN_API_KEY\"" "$JELLYFIN_URL/Sessions" \
+  | jq '.[] | select(.NowPlayingItem) | {RemoteEndPoint, Client, paused: .PlayState.IsPaused}'
+```
+
+</details>
+
+<details>
+<summary><b>Resuming near the end starts the episode over</b></summary>
+
+Plex on the TV stops playback when another app opens. Past the point where Plex marks an episode watched, it clears your place, so Play would start from the beginning. The blocker puts the position back before pressing Play, and the log says `Plex marked it watched; restored the position to 41:32`. Plex counts the episode as unwatched again until you finish it.
+
+That point is set under **Settings › Library** in Plex:
+
+- **Video played threshold** is the percentage watched, 90% by default.
+- **Video play completion behaviour** can mark an episode watched as soon as its credits start, which is often well before the threshold.
+
+</details>
+
+<details>
 <summary><b>"TV unreachable" in the logs</b></summary>
 
 This is expected while the TV is off. The blocker keeps polling and logs when the TV is back.
@@ -243,14 +274,14 @@ To pick the user yourself, set `PUID` and `PGID`. If you set `user:` in the stac
 - It's not a true disable; the blocked app is visible for a moment.
 - Samsung TV Plus is built into the TV and doesn't show up in the applications API (none of the published IDs answer on a DU8000), so its button can't be blocked yet. If you find an ID that works with `app <id>`, please open an issue.
 - HDMI inputs and live TV aren't apps, so there's nothing to return to; the blocker goes Home.
-- Auto-resume supports Plex only.
+- Auto-resume supports Plex and Jellyfin.
 
 ## Security
 
-- The TV pairing token lets anything that has it control the TV, and the Plex token grants access to your Plex account. Both live in the `data` volume (or `DATA_DIR`) with mode `0600`, and are excluded by `.gitignore` and `.dockerignore`.
+- The TV pairing token lets anything that has it control the TV, and the Plex token grants access to your Plex account. Both live in the `data` volume (or `DATA_DIR`) with mode `0600`, and are excluded by `.gitignore` and `.dockerignore`. The Jellyfin API key has full access to your Jellyfin server; keep it in `.env` or a secret, not in a shared stack file.
 - The container switches from root to an unprivileged user before connecting to anything, and needs no inbound ports.
 - The TV uses a self-signed certificate, so verification is disabled for TV requests only. Plex and plex.tv requests are verified.
-- The Plex token is sent as a header, never in URLs.
+- The Plex token and Jellyfin key are sent as headers, never in URLs.
 
 ## Development
 
@@ -276,4 +307,4 @@ Pushes to `main` publish `linux/amd64` and `linux/arm64` images to `ghcr.io/cpeo
 
 ---
 
-<sub>Not affiliated with or endorsed by Samsung, Plex, Netflix, Amazon, Disney, Hulu or Google. App names identify the buttons being blocked; the remote in the banner is an illustration.</sub>
+<sub>Not affiliated with or endorsed by Samsung, Plex, Jellyfin, Netflix, Amazon, Disney, Hulu or Google. App names identify the buttons being blocked; the remote in the banner is an illustration.</sub>

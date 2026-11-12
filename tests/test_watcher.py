@@ -4,15 +4,16 @@ import requests
 from samsungtvws.exceptions import UnauthorizedError
 
 from samsung_remote_blocker.config import load
+from samsung_remote_blocker.media import Session
 from samsung_remote_blocker.watcher import Watcher
 
-NETFLIX, HULU, PLEX = "3201907018807", "3201601007625", "3201512006963"
+NETFLIX, HULU, PLEX, JELLYFIN = "3201907018807", "3201601007625", "3201512006963", "3202007021208"
 
 
 class FakeTV:
     ip = "192.168.0.110"
 
-    def __init__(self, visible=(), installed=(NETFLIX, HULU, PLEX), paired=True):
+    def __init__(self, visible=(), installed=(NETFLIX, HULU, PLEX, JELLYFIN), paired=True):
         self.visible = set(visible)
         self.installed = set(installed)
         self.calls = []
@@ -45,10 +46,16 @@ class FakeTV:
 
 
 class FakePlex:
-    def __init__(self, state="playing", status=None):
+    name = "Plex"
+    auth_hint = "rejected the token; run plex-login again"
+
+    def __init__(self, state="playing", status=None, offset_ms=2_400_000):
         self.state = state
         self.status = status
         self.queue = []  # states reported before `state`
+        self.offset_ms = offset_ms
+        self.cleared = True  # whether Plex wiped the resume point
+        self.restored = []
 
     def player_state(self, ip):
         if self.status:
@@ -56,6 +63,16 @@ class FakePlex:
             response.status_code = self.status
             raise requests.HTTPError(response=response)
         return self.queue.pop(0) if self.queue else self.state
+
+    def session(self, ip):
+        state = self.player_state(ip)
+        return Session(state, "42", self.offset_ms) if state else None
+
+    def restore_position(self, rating_key, offset_ms):
+        if not self.cleared:
+            return False
+        self.restored.append((rating_key, offset_ms))
+        return True
 
 
 class Clock:
@@ -69,7 +86,8 @@ class Clock:
 def watcher(tv, plex=None, **env):
     clock = Clock()
     env = {"BLOCKED_APPS": "netflix,hulu", "ALLOWED_APPS": "plex", **env}
-    w = Watcher(load(env), tv, plex, clock=clock, sleep=lambda s: None)
+    w = Watcher(load(env), tv, {PLEX: plex} if plex else None, clock=clock, sleep=lambda s: None)
+    w.plex = plex
     return w, clock
 
 
@@ -138,6 +156,41 @@ class WatcherTest(unittest.TestCase):
         w.step()
         self.assertNotIn(("key", "KEY_PLAY"), tv.calls)
 
+    def test_restores_a_position_plex_cleared_before_pressing_play(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing", offset_ms=2_492_000))
+        w.step()
+        tv.visible = {NETFLIX}
+        with self.assertLogs("samsung_remote_blocker.watcher", "INFO") as logs:
+            w.step()
+        self.assertEqual(w.plex.restored, [("42", 2_492_000)])
+        self.assertIn(("key", "KEY_PLAY"), tv.calls)
+        self.assertTrue(any("41:32" in line for line in logs.output))
+
+    def test_leaves_the_position_alone_when_plex_kept_it(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing"))
+        w.plex.cleared = False
+        w.step()
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertEqual(w.plex.restored, [])
+        self.assertIn(("key", "KEY_PLAY"), tv.calls)
+
+    def test_failed_restore_still_presses_play(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing"))
+        w.step()
+
+        def fail(rating_key, offset_ms):
+            raise requests.ConnectionError()
+
+        w.plex.restore_position = fail
+        tv.visible = {NETFLIX}
+        with self.assertLogs("samsung_remote_blocker.watcher", "WARNING"):
+            w.step()
+        self.assertIn(("key", "KEY_PLAY"), tv.calls)
+
     def test_resumes_after_a_slow_app_launch(self):
         tv = FakeTV(visible={PLEX})
         w, clock = watcher(tv, FakePlex("playing"))
@@ -161,6 +214,40 @@ class WatcherTest(unittest.TestCase):
         tv.visible = {NETFLIX}
         w.step()
         self.assertNotIn(("key", "KEY_PLAY"), tv.calls)
+
+    def test_returns_to_jellyfin_and_resumes_with_its_own_server(self):
+        tv = FakeTV(visible={JELLYFIN})
+        plex, jellyfin = FakePlex("paused"), FakePlex("playing")
+        jellyfin.name = "Jellyfin"
+        env = {"BLOCKED_APPS": "netflix", "ALLOWED_APPS": "plex,jellyfin"}
+        w = Watcher(load(env), tv, {PLEX: plex, JELLYFIN: jellyfin}, clock=Clock(), sleep=lambda s: None)
+        w.step()
+        tv.visible = {NETFLIX}
+        with self.assertLogs("samsung_remote_blocker.watcher", "INFO") as logs:
+            w.step()
+        self.assertEqual(tv.calls[0], ("launch", JELLYFIN))
+        self.assertIn(("key", "KEY_PLAY"), tv.calls)
+        self.assertIn("back to Jellyfin (resuming)", logs.output[0])
+
+    def test_switching_apps_forgets_the_old_position(self):
+        tv = FakeTV(visible={PLEX})
+        plex, jellyfin = FakePlex("playing"), FakePlex("paused")
+        w = Watcher(
+            load({"ALLOWED_APPS": "plex,jellyfin"}), tv, {PLEX: plex, JELLYFIN: jellyfin}, clock=Clock()
+        )
+        w.step()
+        self.assertIsNotNone(w._position)
+        tv.visible = {JELLYFIN}
+        w.step()
+        self.assertIsNone(w._position)
+
+    def test_allowed_app_without_a_server_comes_back_without_resuming(self):
+        tv = FakeTV(visible={JELLYFIN})
+        w, _ = watcher(tv, FakePlex("playing"), ALLOWED_APPS="plex,jellyfin")
+        w.step()
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertEqual(tv.calls, [("launch", JELLYFIN), ("close", NETFLIX)])
 
     def test_goes_home_without_an_allowed_app(self):
         tv = FakeTV(visible={NETFLIX})

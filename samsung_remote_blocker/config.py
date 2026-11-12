@@ -14,7 +14,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 DEFAULT_BLOCKED = "netflix,disney,prime,hulu,youtube"
-DEFAULT_ALLOWED = "plex"
+DEFAULT_ALLOWED = "plex,jellyfin"
 
 
 class ConfigError(Exception):
@@ -23,6 +23,7 @@ class ConfigError(Exception):
 
 REGISTRY: dict[str, dict] = json.loads(Path(__file__).with_name("apps.json").read_text())
 PLEX_APP_IDS = frozenset(REGISTRY["plex"]["ids"])
+JELLYFIN_APP_IDS = frozenset(REGISTRY["jellyfin"]["ids"])
 
 
 def parse_apps(spec: str, registry: Mapping[str, dict] = REGISTRY) -> dict[str, str]:
@@ -56,6 +57,8 @@ class Settings:
     plex_url: str | None
     plex_token_file: Path
     plex_token: str | None = field(default=None, repr=False)  # keep it out of logs and tracebacks
+    jellyfin_url: str | None = None
+    jellyfin_api_key: str | None = field(default=None, repr=False)
 
     @property
     def tv_token_file(self) -> Path:
@@ -137,4 +140,6 @@ def load(env: Mapping[str, str] = os.environ) -> Settings:
         plex_url=(env.get("PLEX_URL") or "").rstrip("/") or None,
         plex_token_file=plex_token_file,
         plex_token=read_plex_token(env, plex_token_file),
+        jellyfin_url=(env.get("JELLYFIN_URL") or "").rstrip("/") or None,
+        jellyfin_api_key=(env.get("JELLYFIN_API_KEY") or "").strip() or None,
     )

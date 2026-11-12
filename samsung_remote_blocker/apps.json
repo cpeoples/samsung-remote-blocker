@@ -1,6 +1,7 @@
 {
   "netflix": {"name": "Netflix", "ids": {"3201907018807": ["UN65DU8000FXZA"]}},
   "plex": {"name": "Plex", "ids": {"3201512006963": ["UN65DU8000FXZA"]}},
+  "jellyfin": {"name": "Jellyfin", "ids": {"3202007021208": ["UN65DU8000FXZA"]}},
   "disney": {"name": "Disney+", "ids": {"3201901017640": ["UN65DU8000FXZA"]}},
   "prime": {"name": "Prime Video", "ids": {"3201910019365": ["UN65DU8000FXZA"], "3201512006785": []}},
   "hulu": {"name": "Hulu", "ids": {"3201601007625": ["UN65DU8000FXZA"]}},

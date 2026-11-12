@@ -13,7 +13,9 @@ from pathlib import Path
 from samsungtvws.exceptions import UnauthorizedError
 
 from . import NAME, __version__, discover, plex, privileges
-from .config import REGISTRY, ConfigError, Settings, load
+from .config import JELLYFIN_APP_IDS, PLEX_APP_IDS, REGISTRY, ConfigError, Settings, load
+from .jellyfin import Jellyfin
+from .media import MediaServer
 from .plex import Plex
 from .tv import PAIR_TIMEOUT, TV, TV_ERRORS
 from .watcher import Watcher
@@ -40,11 +42,21 @@ def scan_hosts(cidr: str) -> set[str]:
         raise argparse.ArgumentTypeError(str(e)) from None
 
 
+def media_servers(settings: Settings) -> dict[str, MediaServer]:
+    """Map each media app ID to the server that can say what it's playing."""
+    servers: dict[str, MediaServer] = {}
+    if not settings.resume:
+        return servers
+    if settings.plex_url and settings.plex_token:
+        servers.update(dict.fromkeys(PLEX_APP_IDS, Plex(settings.plex_url, settings.plex_token)))
+    if settings.jellyfin_url and settings.jellyfin_api_key:
+        jellyfin = Jellyfin(settings.jellyfin_url, settings.jellyfin_api_key)
+        servers.update(dict.fromkeys(JELLYFIN_APP_IDS, jellyfin))
+    return servers
+
+
 def cmd_watch(settings: Settings, args: argparse.Namespace) -> None:
-    client = None
-    if settings.resume and settings.plex_url and settings.plex_token:
-        client = Plex(settings.plex_url, settings.plex_token)
-    Watcher(settings, tv_for(settings), client).run()
+    Watcher(settings, tv_for(settings), media_servers(settings)).run()
 
 
 def cmd_pair(settings: Settings, args: argparse.Namespace) -> None:
