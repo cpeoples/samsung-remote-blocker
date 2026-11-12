@@ -9,7 +9,7 @@ name: samsung-remote-blocker
 
 services:
   blocker:
-    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.3
+    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.4
     restart: unless-stopped
     environment:
       TV_IP: 192.168.0.110
@@ -22,6 +22,8 @@ services:
       PLEX_POLL_SECONDS: "1"
       RESUME_WINDOW: "3"
       RESUME_DELAY: "2"
+      RESUME: "true"
+      LOG_LEVEL: info
       TZ: America/New_York  # log timestamps
       # Already have a Plex token? Use the secret below instead of plex-login.
       # PLEX_TOKEN_FILE: /run/secrets/plex_token

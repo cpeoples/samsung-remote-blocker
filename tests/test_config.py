@@ -53,6 +53,13 @@ class LoadTest(unittest.TestCase):
             with self.assertRaisesRegex(ConfigError, "POLL_SECONDS"):
                 load({"POLL_SECONDS": bad})
 
+    def test_resume_switch(self):
+        self.assertTrue(load({}).resume)
+        for off in ("false", "0", "no", "OFF"):
+            self.assertFalse(load({"RESUME": off}).resume)
+        with self.assertRaisesRegex(ConfigError, "RESUME"):
+            load({"RESUME": "maybe"})
+
     def test_token_is_not_in_repr(self):
         self.assertNotIn("s3cret", repr(load({"PLEX_TOKEN": "s3cret"})))
 

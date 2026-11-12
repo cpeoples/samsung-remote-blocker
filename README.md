@@ -83,7 +83,9 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 | `PLEX_POLL_SECONDS` | `1` | Plex poll interval while Plex is in front |
 | `RESUME_WINDOW` | `3` | Resume if Plex was playing within this many seconds |
 | `RESUME_DELAY` | `2` | Wait before the first Play press. Play is repeated until Plex reports playback |
+| `RESUME` | `true` | `false` brings Plex back without pressing Play |
 | `TZ` | UTC | Time zone for log timestamps, e.g. `America/New_York` |
+| `LOG_LEVEL` | `info` | `debug` adds what Plex reported while resuming |
 | `DATA_DIR` | `/data` in Docker, `.` otherwise | Where tokens are stored |
 | `PUID` / `PGID` | owner of `PLEX_PREFERENCES`, else `1000` | User the container runs as. Rarely needed; see [Permissions](#permissions) |
 
@@ -154,7 +156,7 @@ The image's entrypoint is the CLI, so `docker compose run --rm blocker <command>
 | `key <KEY>` | Send one remote key, e.g. `key KEY_PLAY` |
 | `plex-login` | Get a Plex token via plex.tv/link |
 
-Add `-v` before the command for debug logging. That output includes the TV token.
+Add `-v` before the command for debug logging, or set `LOG_LEVEL=debug` in the stack for the running blocker. Don't run `watch` from a console while the container is running; two watchers will both react to every button. `--version` prints the version.
 
 </details>
 
@@ -216,7 +218,7 @@ curl -s -H 'Accept: application/json' -H "X-Plex-Token: $PLEX_TOKEN" "$PLEX_URL/
   | jq '.MediaContainer.Metadata[].Player | {address, state}'
 ```
 
-If it says `(resuming)` but stays paused, the log also says `Plex didn't resume after 4 presses of Play`. Check that `key KEY_PLAY` works by hand, then raise `RESUME_DELAY`.
+If it says `(resuming)` but stays paused, the log also says `Plex didn't resume`. Check that `key KEY_PLAY` works by hand, then raise `RESUME_DELAY`. `LOG_LEVEL=debug` shows what Plex reported after each press. To turn resuming off, set `RESUME=false`.
 
 </details>
 

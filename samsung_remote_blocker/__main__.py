@@ -12,7 +12,7 @@ from pathlib import Path
 
 from samsungtvws.exceptions import UnauthorizedError
 
-from . import NAME, discover, plex, privileges
+from . import NAME, __version__, discover, plex, privileges
 from .config import REGISTRY, ConfigError, Settings, load
 from .plex import Plex
 from .tv import PAIR_TIMEOUT, TV, TV_ERRORS
@@ -42,7 +42,7 @@ def scan_hosts(cidr: str) -> set[str]:
 
 def cmd_watch(settings: Settings, args: argparse.Namespace) -> None:
     client = None
-    if settings.plex_url and settings.plex_token:
+    if settings.resume and settings.plex_url and settings.plex_token:
         client = Plex(settings.plex_url, settings.plex_token)
     Watcher(settings, tv_for(settings), client).run()
 
@@ -93,7 +93,8 @@ def cmd_plex_login(settings: Settings, args: argparse.Namespace) -> None:
 
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog=NAME, description="Kick blocked apps off a Samsung TV.")
-    p.add_argument("-v", "--verbose", action="store_true", help="debug logging (prints the TV token)")
+    p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
+    p.add_argument("-v", "--verbose", action="store_true", help="debug logging, same as LOG_LEVEL=debug")
     sub = p.add_subparsers(dest="command")
 
     sub.add_parser("watch", help="run the watcher (default)").set_defaults(func=cmd_watch)
@@ -124,14 +125,12 @@ def main(argv: list[str] | None = None) -> None:
     args = parser().parse_args(argv)
     # Tokens are the only files written, by us and by samsungtvws; keep them owner-only.
     os.umask(0o077)
-    logging.basicConfig(
-        level=logging.DEBUG if args.verbose else logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
-    )
-    if not args.verbose:
-        # Routine keep-alive retries against the TV; see TV.__init__.
-        logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
-        # samsungtvws logs the pairing token at INFO.
-        logging.getLogger("samsungtvws").setLevel(logging.WARNING)
+    debug = args.verbose or os.environ.get("LOG_LEVEL", "").lower() == "debug"
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    # Debug is for our logger only; samsungtvws logs the pairing token.
+    logging.getLogger("samsung_remote_blocker").setLevel(logging.DEBUG if debug else logging.INFO)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+    logging.getLogger("samsungtvws").setLevel(logging.WARNING)
     # As PID 1 in a container, Python ignores SIGTERM, so `docker stop` would end in SIGKILL.
     signal.signal(signal.SIGTERM, signal.default_int_handler)
     try:

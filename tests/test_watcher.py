@@ -91,15 +91,33 @@ class WatcherTest(unittest.TestCase):
         w.step()
         self.assertEqual(tv.calls.count(("key", "KEY_PLAY")), 3)
 
+    def test_one_stale_playing_report_is_not_trusted(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing"))
+        w.step()
+        w.plex.queue = ["playing", "paused"]
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertEqual(tv.calls.count(("key", "KEY_PLAY")), 2)
+
+    def test_resume_can_be_turned_off(self):
+        tv = FakeTV(visible={PLEX})
+        w, _ = watcher(tv, FakePlex("playing"), RESUME="false")
+        w.step()
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertEqual(tv.calls, [("launch", PLEX), ("close", NETFLIX)])
+
     def test_gives_up_resuming_after_a_few_presses(self):
         tv = FakeTV(visible={PLEX})
         w, _ = watcher(tv, FakePlex("playing"))
         w.step()
         w.plex.state = "paused"
         tv.visible = {NETFLIX}
-        with self.assertLogs("samsung_remote_blocker.watcher", "WARNING"):
+        with self.assertLogs("samsung_remote_blocker.watcher", "WARNING") as logs:
             w.step()
-        self.assertEqual(tv.calls.count(("key", "KEY_PLAY")), 4)
+        self.assertEqual(tv.calls.count(("key", "KEY_PLAY")), 6)
+        self.assertIn("RESUME=false", logs.output[0])
         self.assertEqual(tv.calls[-1], ("close", NETFLIX))
 
     def test_does_not_resume_when_paused(self):

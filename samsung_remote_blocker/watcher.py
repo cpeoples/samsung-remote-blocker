@@ -19,8 +19,8 @@ log = logging.getLogger(__name__)
 CLOSE_DELAY = 1.0
 # Consecutive failed polls before the TV is reported offline; single drops are routine.
 OFFLINE_AFTER = 3
-# Play presses while waiting for Plex to resume, and the wait after each.
-RESUME_TRIES = 4
+# Plex checks while resuming, and the wait between them.
+RESUME_TRIES = 6
 RESUME_CHECK_SECONDS = 1.5
 
 
@@ -54,7 +54,9 @@ class Watcher:
             ", ".join(sorted(set(self.blocked.values()))),
             ", ".join(sorted(set(self.allowed.values()))),
         )
-        if not self.plex:
+        if not self.settings.resume:
+            log.info("RESUME is off; will return to Plex but not press Play")
+        elif not self.plex:
             log.info("PLEX_URL or Plex token not set; will return to Plex but not resume")
         while True:
             try:
@@ -146,7 +148,9 @@ class Watcher:
     def _evict(self, app_id: str, name: str) -> None:
         target = self.last_allowed
         resume = (
-            target in PLEX_APP_IDS
+            self.settings.resume
+            and self.plex is not None
+            and target in PLEX_APP_IDS
             and self.last_playing is not None
             and self.clock() - self.last_playing <= self.settings.resume_window
         )
@@ -172,14 +176,19 @@ class Watcher:
         self.last_playing = None
 
     def _resume(self) -> None:
-        """Plex can ignore keys right after it comes back, so press Play until it plays."""
+        """Press Play until Plex says playing twice in a row; its first report can be stale."""
         self.sleep(self.settings.resume_delay)
-        for _ in range(RESUME_TRIES):
-            self.tv.send_key("KEY_PLAY")  # Play, not toggle, so a repeat can't pause it
+        confirmed = 0
+        for attempt in range(1, RESUME_TRIES + 1):
+            if confirmed == 0:
+                self.tv.send_key("KEY_PLAY")  # Play, not toggle, so a repeat can't pause it
             self.sleep(RESUME_CHECK_SECONDS)
             try:
-                if self.plex.player_state(self.tv.ip) in ("playing", "buffering"):
-                    return
+                state = self.plex.player_state(self.tv.ip)
             except requests.RequestException:
                 return
-        log.warning("Plex didn't resume after %d presses of Play", RESUME_TRIES)
+            log.debug("Resume check %d/%d: Plex reports %s", attempt, RESUME_TRIES, state)
+            confirmed = confirmed + 1 if state in ("playing", "buffering") else 0
+            if confirmed == 2:
+                return
+        log.warning("Plex didn't resume; set RESUME_DELAY higher, or RESUME=false to turn it off")

@@ -52,6 +52,7 @@ class Settings:
     plex_poll_seconds: float
     resume_window: float
     resume_delay: float
+    resume: bool
     plex_url: str | None
     plex_token_file: Path
     plex_token: str | None = field(default=None, repr=False)  # keep it out of logs and tracebacks
@@ -76,6 +77,17 @@ def _float(env: Mapping[str, str], name: str, default: float) -> float:
     if value <= 0:
         raise ConfigError(f"{name} must be positive, got {raw!r}")
     return value
+
+
+def _bool(env: Mapping[str, str], name: str, default: bool) -> bool:
+    raw = (env.get(name) or "").strip().lower()
+    if not raw:
+        return default
+    if raw in ("1", "true", "yes", "on"):
+        return True
+    if raw in ("0", "false", "no", "off"):
+        return False
+    raise ConfigError(f"{name} must be true or false, got {raw!r}")
 
 
 def _tv_ip(raw: str | None) -> str | None:
@@ -121,6 +133,7 @@ def load(env: Mapping[str, str] = os.environ) -> Settings:
         plex_poll_seconds=_float(env, "PLEX_POLL_SECONDS", 1.0),
         resume_window=_float(env, "RESUME_WINDOW", 3.0),
         resume_delay=_float(env, "RESUME_DELAY", 2.0),
+        resume=_bool(env, "RESUME", True),
         plex_url=(env.get("PLEX_URL") or "").rstrip("/") or None,
         plex_token_file=plex_token_file,
         plex_token=read_plex_token(env, plex_token_file),
