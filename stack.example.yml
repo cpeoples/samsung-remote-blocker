@@ -9,7 +9,7 @@ name: samsung-remote-blocker
 
 services:
   blocker:
-    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.1
+    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.2
     restart: unless-stopped
     environment:
       TV_IP: 192.168.0.110
@@ -30,12 +30,11 @@ services:
     # secrets:
     #   - plex_token
     volumes:
-      - data:/data  # or a folder, chowned to 1000:1000
+      - data:/data  # or a folder
       # Plex's config folder, read-only. The folder, not the file, which Plex replaces on save.
       # - "/srv/appdata/plex/Library/Application Support/Plex Media Server:/plex:ro"
 
-# The file holds just the token. The container runs as uid 1000, so on Linux:
-#   chown 1000 plex_token.txt && chmod 600 plex_token.txt
+# The file holds just the token; chmod 600 it.
 # secrets:
 #   plex_token:
 #     file: ./plex_token.txt

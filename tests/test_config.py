@@ -93,9 +93,9 @@ class PlexTokenTest(unittest.TestCase):
         prefs = self.write("Preferences.xml", '<Preferences PlexOnlineToken="from-pms"/>')
         self.assertEqual(self.token(PLEX_PREFERENCES=prefs), "from-pms")
 
-    def test_bad_preferences_is_a_config_error(self):
-        with self.assertRaises(ConfigError):
-            self.token(PLEX_PREFERENCES=str(self.dir / "missing.xml"))
+    def test_unreadable_preferences_warns_and_continues(self):
+        with self.assertLogs("samsung_remote_blocker.config", "WARNING"):
+            self.assertIsNone(self.token(PLEX_PREFERENCES=str(self.dir / "missing.xml")))
 
     def test_none(self):
         self.assertIsNone(self.token())

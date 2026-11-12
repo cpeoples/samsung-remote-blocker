@@ -196,6 +196,14 @@ class WatcherTest(unittest.TestCase):
             w.ensure_paired()
         self.assertIn("External Device Manager", logs.output[0])
 
+    def test_unsaved_token_is_not_called_a_missed_prompt(self):
+        tv = FakeTV(paired=False)
+        tv.pair_error = PermissionError("Permission denied: '/data/tv-token.txt'")
+        w, _ = watcher(tv)
+        with self.assertLogs("samsung_remote_blocker.watcher", "ERROR") as logs:
+            w.ensure_paired()
+        self.assertIn("can't be saved", logs.output[0])
+
 
 if __name__ == "__main__":
     unittest.main()

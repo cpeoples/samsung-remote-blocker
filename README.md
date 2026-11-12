@@ -85,6 +85,7 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 | `RESUME_DELAY` | `2` | Wait before pressing Play, so Plex is in front |
 | `TZ` | UTC | Time zone for log timestamps, e.g. `America/New_York` |
 | `DATA_DIR` | `/data` in Docker, `.` otherwise | Where tokens are stored |
+| `PUID` / `PGID` | owner of `PLEX_PREFERENCES`, else `1000` | User the container runs as. Rarely needed; see [Permissions](#permissions) |
 
 ### Plex token
 
@@ -226,6 +227,15 @@ This is expected while the TV is off. The blocker keeps polling and logs when th
 
 </details>
 
+<details>
+<summary><b>Permission denied on <code>/data</code> or <code>Preferences.xml</code></b></summary>
+
+<a id="permissions"></a>The container starts as root only to `chown` `/data`, then switches to the user that owns `Preferences.xml` (so it can read the Plex token), or to `1000:1000`. Named volumes and bind-mounted folders both work without setup.
+
+To pick the user yourself, set `PUID` and `PGID`. If you set `user:` in the stack, nothing is changed: `/data` must already be writable by that user, and the log says so if it isn't.
+
+</details>
+
 ## Limitations
 
 - It's not a true disable; the blocked app is visible for a moment.
@@ -236,7 +246,7 @@ This is expected while the TV is off. The blocker keeps polling and logs when th
 ## Security
 
 - The TV pairing token lets anything that has it control the TV, and the Plex token grants access to your Plex account. Both live in the `data` volume (or `DATA_DIR`) with mode `0600`, and are excluded by `.gitignore` and `.dockerignore`.
-- The container runs as an unprivileged user and needs no inbound ports.
+- The container switches from root to an unprivileged user before connecting to anything, and needs no inbound ports.
 - The TV uses a self-signed certificate, so verification is disabled for TV requests only. Plex and plex.tv requests are verified.
 - The Plex token is sent as a header, never in URLs.
 

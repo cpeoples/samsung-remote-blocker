@@ -82,7 +82,10 @@ class Watcher:
             )
             return
         except TV_ERRORS as e:
-            log.warning("No answer to the Allow prompt (%s); will ask again when the TV next comes on", e)
+            if isinstance(e, PermissionError):
+                log.error("Paired, but the token can't be saved (%s); fix the /data permissions", e)
+            else:
+                log.warning("No answer to the Allow prompt (%s); will ask again when the TV next comes on", e)
             return
         log.info("Paired with the TV")
 

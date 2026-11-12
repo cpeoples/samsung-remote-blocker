@@ -1,5 +1,6 @@
 import contextlib
 import io
+import logging
 import os
 import stat
 import tempfile
@@ -101,6 +102,22 @@ class CliTest(unittest.TestCase):
             main(["pair"])
         self.assertEqual((data / "tv-token-192.168.0.110.txt").read_text(), "old")
         self.assertFalse((data / "tv-token.txt").exists())
+
+    def test_unwritable_data_dir_is_a_config_error(self):
+        data = Path(tempfile.mkdtemp())
+        data.chmod(0o500)
+        self.addCleanup(data.chmod, 0o700)
+        code, _ = self.run_cli("pair", env={"TV_IP": "192.168.0.110", "DATA_DIR": str(data)})
+        self.assertIn("isn't writable", code)
+
+    def test_tv_token_is_never_logged(self):
+        with (
+            mock.patch("samsung_remote_blocker.plex.link_device"),
+            mock.patch.dict(os.environ, {"DATA_DIR": tempfile.mkdtemp()}, clear=True),
+        ):
+            main(["plex-login"])
+        self.addCleanup(logging.getLogger("samsungtvws").setLevel, logging.NOTSET)
+        self.assertEqual(logging.getLogger("samsungtvws").level, logging.WARNING)
 
 
 if __name__ == "__main__":

@@ -18,6 +18,6 @@ services:
     # Only needed for `discover` without --scan (SSDP multicast). Linux hosts only.
     # network_mode: host
 
-# To use a folder instead, mount `/your/path:/data`, `chown 1000:1000` it, and delete this section.
+# To use a folder instead, mount `/your/path:/data` and delete this section.
 volumes:
   data:

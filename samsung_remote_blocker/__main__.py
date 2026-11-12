@@ -8,10 +8,11 @@ import logging
 import os
 import signal
 import sys
+from pathlib import Path
 
 from samsungtvws.exceptions import UnauthorizedError
 
-from . import NAME, discover, plex
+from . import NAME, discover, plex, privileges
 from .config import REGISTRY, ConfigError, Settings, load
 from .plex import Plex
 from .tv import PAIR_TIMEOUT, TV, TV_ERRORS
@@ -20,6 +21,11 @@ from .watcher import Watcher
 
 def tv_for(settings: Settings) -> TV:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
+    if not os.access(settings.data_dir, os.W_OK):
+        raise ConfigError(
+            f"{settings.data_dir} isn't writable by uid {os.getuid()}, so the TV token can't be saved; "
+            f"chown it to {os.getuid()}:{os.getgid()}"
+        )
     token_file = settings.tv_token_file
     legacy = settings.data_dir / "tv-token.txt"  # 0.1.0 kept one token for any TV
     if legacy.is_file() and not token_file.exists():
@@ -42,8 +48,9 @@ def cmd_watch(settings: Settings, args: argparse.Namespace) -> None:
 
 
 def cmd_pair(settings: Settings, args: argparse.Namespace) -> None:
+    tv = tv_for(settings)
     print(f"Press Allow on the TV (waiting {PAIR_TIMEOUT:.0f} s)...")
-    tv_for(settings).pair()
+    tv.pair()
     print(f"Paired; token saved to {settings.tv_token_file}")
 
 
@@ -123,9 +130,12 @@ def main(argv: list[str] | None = None) -> None:
     if not args.verbose:
         # Routine keep-alive retries against the TV; see TV.__init__.
         logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
+        # samsungtvws logs the pairing token at INFO.
+        logging.getLogger("samsungtvws").setLevel(logging.WARNING)
     # As PID 1 in a container, Python ignores SIGTERM, so `docker stop` would end in SIGKILL.
     signal.signal(signal.SIGTERM, signal.default_int_handler)
     try:
+        privileges.drop_root(os.environ, Path(os.environ.get("DATA_DIR") or "."))
         (getattr(args, "func", None) or cmd_watch)(load(), args)
     except ConfigError as e:
         sys.exit(f"Config error: {e}")

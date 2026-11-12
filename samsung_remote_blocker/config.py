@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import ipaddress
 import json
+import logging
 import os
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
+
+log = logging.getLogger(__name__)
 
 DEFAULT_BLOCKED = "netflix,disney,prime,hulu"
 DEFAULT_ALLOWED = "plex"
@@ -100,7 +103,8 @@ def read_plex_token(env: Mapping[str, str], token_file: Path) -> str | None:
         try:
             return ET.parse(prefs).getroot().get("PlexOnlineToken") or None
         except (OSError, ET.ParseError) as e:
-            raise ConfigError(f"can't read PlexOnlineToken from {prefs}: {e}") from None
+            # The token only enables resume, so don't stop blocking over it.
+            log.warning("Can't read PlexOnlineToken from %s (%s); continuing without resume", prefs, e)
     return None
 
 

@@ -16,9 +16,9 @@ COPY samsung_remote_blocker ./samsung_remote_blocker
 RUN pip install . && rm -rf /app
 
 # /data holds the TV pairing token and Plex token; keep it on a volume.
+# Starts as root to chown /data, then drops privileges; see privileges.py.
 RUN useradd --uid 1000 --no-create-home --shell /usr/sbin/nologin app \
  && mkdir /data && chown app:app /data && chmod 700 /data
-USER app
 WORKDIR /data
 VOLUME /data
 
