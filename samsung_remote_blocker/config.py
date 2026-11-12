@@ -55,7 +55,8 @@ class Settings:
 
     @property
     def tv_token_file(self) -> Path:
-        return self.data_dir / "tv-token.txt"
+        # Per TV, so blockers for several TVs can share a volume.
+        return self.data_dir / f"tv-token-{self.require_tv_ip()}.txt"
 
     def require_tv_ip(self) -> str:
         if not self.tv_ip:

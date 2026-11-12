@@ -6,5 +6,5 @@ build/
 htmlcov/
 .ruff_cache/
 .env
-tv-token.txt
+tv-token*.txt
 .plex-token

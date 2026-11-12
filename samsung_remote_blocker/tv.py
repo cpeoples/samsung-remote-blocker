@@ -18,6 +18,8 @@ from . import NAME
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 PORT = 8002
+# How long the pairing prompt waits for Allow.
+PAIR_TIMEOUT = 60.0
 # Everything a TV call can raise: REST, WebSocket, socket and samsungtvws handshake errors.
 TV_ERRORS = (requests.RequestException, websocket.WebSocketException, ConnectionFailure, OSError)
 
@@ -26,6 +28,7 @@ class TV:
     def __init__(self, ip: str, token_file: Path, timeout: float = 3.0):
         self.ip = ip
         self.timeout = timeout
+        self.token_file = token_file
         self._apps_url = f"https://{ip}:{PORT}/api/v2/applications/"
         self._http = requests.Session()  # reused so polling doesn't pay a TLS handshake each time
         self._http.verify = False
@@ -52,6 +55,17 @@ class TV:
     def installed_apps(self) -> list[dict]:
         """Not answered by all firmware; may time out."""
         return self._remote.app_list() or []
+
+    @property
+    def paired(self) -> bool:
+        return self.token_file.is_file() and bool(self.token_file.read_text().strip())
+
+    def pair(self, timeout: float = PAIR_TIMEOUT) -> None:
+        """Show the Allow prompt and wait. Raises UnauthorizedError if denied."""
+        with SamsungTVWS(
+            host=self.ip, port=PORT, token_file=str(self.token_file), name=NAME, timeout=timeout
+        ) as remote:
+            remote.open()
 
     def send_key(self, key: str) -> None:
         try:

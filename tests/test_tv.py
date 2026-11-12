@@ -1,10 +1,11 @@
+import tempfile
 import unittest
 from pathlib import Path
 from unittest import mock
 
 import requests
 
-from samsung_remote_blocker.tv import TV
+from samsung_remote_blocker.tv import PAIR_TIMEOUT, TV
 
 
 def response(status, body=None):
@@ -64,6 +65,21 @@ class TVTest(unittest.TestCase):
         self.tv.send_key("KEY_PLAY")
         self.ws.send_key.assert_called_once_with("KEY_PLAY")
         self.ws.close.assert_not_called()
+
+    def test_paired_reads_the_token_file(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.tv.token_file = Path(d) / "tv-token.txt"
+            self.assertFalse(self.tv.paired)
+            self.tv.token_file.write_text("\n")
+            self.assertFalse(self.tv.paired)
+            self.tv.token_file.write_text("12345678")
+            self.assertTrue(self.tv.paired)
+
+    def test_pair_waits_longer_than_normal_calls(self):
+        with mock.patch("samsung_remote_blocker.tv.SamsungTVWS") as ws:
+            self.tv.pair()
+        self.assertEqual(ws.call_args.kwargs["timeout"], PAIR_TIMEOUT)
+        ws.return_value.__enter__.return_value.open.assert_called_once()
 
 
 if __name__ == "__main__":

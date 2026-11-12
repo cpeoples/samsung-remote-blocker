@@ -41,6 +41,12 @@ class LoadTest(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "TV_IP"):
             load({"TV_IP": "living-room.lan"})
 
+    def test_each_tv_has_its_own_token_file(self):
+        a = load({"TV_IP": "192.168.0.110", "DATA_DIR": "/data"}).tv_token_file
+        b = load({"TV_IP": "192.168.0.111", "DATA_DIR": "/data"}).tv_token_file
+        self.assertEqual(a.parent, b.parent)
+        self.assertNotEqual(a, b)
+
     def test_numbers_are_validated(self):
         for bad in ("abc", "0", "-1"):
             with self.assertRaisesRegex(ConfigError, "POLL_SECONDS"):

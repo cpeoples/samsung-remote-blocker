@@ -7,10 +7,11 @@ import time
 from collections.abc import Callable
 
 import requests
+from samsungtvws.exceptions import UnauthorizedError
 
 from .config import PLEX_APP_IDS, Settings
 from .plex import Plex
-from .tv import TV, TV_ERRORS
+from .tv import PAIR_TIMEOUT, TV, TV_ERRORS
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ class Watcher:
         self._last_plex_poll: float | None = None
         self._tv_failures = 0
         self._plex_online = True
+        self._pair_attempted = False
 
     def run(self) -> None:
         log.info(
@@ -56,12 +58,33 @@ class Watcher:
                 self.step()
                 if self._tv_failures >= OFFLINE_AFTER:
                     log.info("TV is reachable again")
+                    self._pair_attempted = False
                 self._tv_failures = 0
+                self.ensure_paired()
             except requests.RequestException as e:
                 self._tv_failures += 1
                 if self._tv_failures == OFFLINE_AFTER:
                     log.warning("TV unreachable (%s); retrying", type(e).__name__)
             self.sleep(self.settings.poll_seconds)
+
+    def ensure_paired(self) -> None:
+        """Only keys need pairing, so a missed prompt is retried when the TV next comes on."""
+        if self._pair_attempted or self.tv.paired:
+            return
+        self._pair_attempted = True
+        log.info("Not paired yet; press Allow on the TV (waiting %.0f s)", PAIR_TIMEOUT)
+        try:
+            self.tv.pair()
+        except UnauthorizedError:
+            log.error(
+                "The TV denied pairing. Remove the device under Settings > General > "
+                "External Device Manager, then restart the container"
+            )
+            return
+        except TV_ERRORS as e:
+            log.warning("No answer to the Allow prompt (%s); will ask again when the TV next comes on", e)
+            return
+        log.info("Paired with the TV")
 
     def step(self) -> None:
         statuses = {app_id: self.tv.app(app_id) for app_id in {**self.allowed, **self.blocked}}

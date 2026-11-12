@@ -2,15 +2,14 @@
 # `docker compose -f stack.example.yml up -d` and as a Portainer stack.
 # Only TV_IP is required; delete what you don't use.
 #
-# First run, once each:
-#   docker compose -f stack.example.yml run --rm blocker pair         # accept the prompt on the TV
-#   docker compose -f stack.example.yml run --rm blocker plex-login   # optional, for auto-resume
-# Both tokens are saved in the data volume.
+# On first start the TV shows an Allow prompt; accept it with the remote. Optional, for auto-resume:
+#   docker compose -f stack.example.yml run --rm blocker plex-login
+# Tokens are saved in the data volume. For several TVs, add one service per TV sharing the volume.
 name: samsung-remote-blocker
 
 services:
   blocker:
-    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.0
+    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.1
     restart: unless-stopped
     environment:
       TV_IP: 192.168.0.110
@@ -26,10 +25,14 @@ services:
       TZ: America/New_York  # log timestamps
       # Already have a Plex token? Use the secret below instead of plex-login.
       # PLEX_TOKEN_FILE: /run/secrets/plex_token
+      # Plex Media Server on this host? Read its token instead; see the mount below.
+      # PLEX_PREFERENCES: /plex/Preferences.xml
     # secrets:
     #   - plex_token
     volumes:
-      - data:/data
+      - data:/data  # or a folder, chowned to 1000:1000
+      # Plex's config folder, read-only. The folder, not the file, which Plex replaces on save.
+      # - "/srv/appdata/plex/Library/Application Support/Plex Media Server:/plex:ro"
 
 # The file holds just the token. The container runs as uid 1000, so on Linux:
 #   chown 1000 plex_token.txt && chmod 600 plex_token.txt
@@ -37,5 +40,6 @@ services:
 #   plex_token:
 #     file: ./plex_token.txt
 
+# Delete this section if you mount a folder at /data instead.
 volumes:
   data:

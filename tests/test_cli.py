@@ -79,15 +79,28 @@ class CliTest(unittest.TestCase):
             code, _ = self.run_cli("discover")
         self.assertIn("--scan", code)
 
-    def test_pair_sends_a_key(self):
+    def test_pair_opens_the_channel(self):
         data = tempfile.mkdtemp()
         with (
-            mock.patch("samsung_remote_blocker.tv.TV.send_key") as send_key,
+            mock.patch("samsung_remote_blocker.tv.TV.pair") as pair,
             mock.patch.dict(os.environ, {"TV_IP": "192.168.0.110", "DATA_DIR": data}, clear=True),
+            contextlib.redirect_stdout(io.StringIO()) as out,
+        ):
+            main(["pair"])
+        pair.assert_called_once_with()
+        self.assertIn("tv-token-192.168.0.110.txt", out.getvalue())
+
+    def test_token_from_0_1_0_is_kept(self):
+        data = Path(tempfile.mkdtemp())
+        (data / "tv-token.txt").write_text("old")
+        with (
+            mock.patch("samsung_remote_blocker.tv.TV.pair"),
+            mock.patch.dict(os.environ, {"TV_IP": "192.168.0.110", "DATA_DIR": str(data)}, clear=True),
             contextlib.redirect_stdout(io.StringIO()),
         ):
             main(["pair"])
-        send_key.assert_called_once_with("KEY_INFO")
+        self.assertEqual((data / "tv-token-192.168.0.110.txt").read_text(), "old")
+        self.assertFalse((data / "tv-token.txt").exists())
 
 
 if __name__ == "__main__":

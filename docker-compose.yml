@@ -12,11 +12,12 @@ services:
       TV_IP: ${TV_IP:-}
     volumes:
       - data:/data
-      # To reuse the token of a Plex Media Server on this host, mount its Preferences.xml
-      # and set PLEX_PREFERENCES=/plex/Preferences.xml.
-      # - "/path/to/plex/config/Library/Application Support/Plex Media Server/Preferences.xml:/plex/Preferences.xml:ro"
+      # To reuse the token of a Plex Media Server on this host, mount its config folder
+      # (not the file, which Plex replaces on save) and set PLEX_PREFERENCES=/plex/Preferences.xml.
+      # - "/path/to/plex/config/Library/Application Support/Plex Media Server:/plex:ro"
     # Only needed for `discover` without --scan (SSDP multicast). Linux hosts only.
     # network_mode: host
 
+# To use a folder instead, mount `/your/path:/data`, `chown 1000:1000` it, and delete this section.
 volumes:
   data:

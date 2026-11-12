@@ -14,13 +14,17 @@ from samsungtvws.exceptions import UnauthorizedError
 from . import NAME, discover, plex
 from .config import REGISTRY, ConfigError, Settings, load
 from .plex import Plex
-from .tv import TV, TV_ERRORS
+from .tv import PAIR_TIMEOUT, TV, TV_ERRORS
 from .watcher import Watcher
 
 
 def tv_for(settings: Settings) -> TV:
     settings.data_dir.mkdir(parents=True, exist_ok=True)
-    return TV(settings.require_tv_ip(), settings.tv_token_file)
+    token_file = settings.tv_token_file
+    legacy = settings.data_dir / "tv-token.txt"  # 0.1.0 kept one token for any TV
+    if legacy.is_file() and not token_file.exists():
+        legacy.rename(token_file)
+    return TV(settings.require_tv_ip(), token_file)
 
 
 def scan_hosts(cidr: str) -> set[str]:
@@ -38,8 +42,8 @@ def cmd_watch(settings: Settings, args: argparse.Namespace) -> None:
 
 
 def cmd_pair(settings: Settings, args: argparse.Namespace) -> None:
-    print("Accept the Allow prompt on the TV if one appears...")
-    tv_for(settings).send_key("KEY_INFO")  # any key opens the remote channel, which pairs
+    print(f"Press Allow on the TV (waiting {PAIR_TIMEOUT:.0f} s)...")
+    tv_for(settings).pair()
     print(f"Paired; token saved to {settings.tv_token_file}")
 
 

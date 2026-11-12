@@ -1,6 +1,7 @@
 import unittest
 
 import requests
+from samsungtvws.exceptions import UnauthorizedError
 
 from samsung_remote_blocker.config import load
 from samsung_remote_blocker.watcher import Watcher
@@ -11,11 +12,19 @@ NETFLIX, HULU, PLEX = "3201907018807", "3201601007625", "3201512006963"
 class FakeTV:
     ip = "192.168.0.110"
 
-    def __init__(self, visible=(), installed=(NETFLIX, HULU, PLEX)):
+    def __init__(self, visible=(), installed=(NETFLIX, HULU, PLEX), paired=True):
         self.visible = set(visible)
         self.installed = set(installed)
         self.calls = []
         self.offline = False
+        self.paired = paired
+        self.pair_error = None
+
+    def pair(self):
+        self.calls.append(("pair",))
+        if self.pair_error:
+            raise self.pair_error
+        self.paired = True
 
     def app(self, app_id):
         if self.offline:
@@ -147,6 +156,45 @@ class WatcherTest(unittest.TestCase):
         with self.assertLogs("samsung_remote_blocker.watcher") as logs, self.assertRaises(KeyboardInterrupt):
             w.run()
         self.assertEqual(sum("unreachable" in line for line in logs.output), 1)
+
+    def test_pairs_once_when_unpaired(self):
+        tv = FakeTV(paired=False)
+        w, _ = watcher(tv)
+        with self.assertLogs("samsung_remote_blocker.watcher") as logs:
+            w.ensure_paired()
+            w.ensure_paired()
+        self.assertEqual(tv.calls, [("pair",)])
+        self.assertIn("Paired", logs.output[-1])
+
+    def test_already_paired_does_nothing(self):
+        tv = FakeTV()
+        w, _ = watcher(tv)
+        w.ensure_paired()
+        self.assertEqual(tv.calls, [])
+
+    def test_unanswered_prompt_is_retried_after_tv_comes_back(self):
+        tv = FakeTV(paired=False)
+        tv.pair_error = TimeoutError("timed out")
+        polls = iter([True, False, False, False, True, True])  # online, offline x3, back
+
+        def sleep(seconds):
+            state = next(polls, None)
+            if state is None:
+                raise KeyboardInterrupt
+            tv.offline = not state
+
+        w = Watcher(load({}), tv, sleep=sleep)
+        with self.assertLogs("samsung_remote_blocker.watcher"), self.assertRaises(KeyboardInterrupt):
+            w.run()
+        self.assertEqual(tv.calls.count(("pair",)), 2)
+
+    def test_denied_pairing_is_logged_not_raised(self):
+        tv = FakeTV(paired=False)
+        tv.pair_error = UnauthorizedError("denied")
+        w, _ = watcher(tv)
+        with self.assertLogs("samsung_remote_blocker.watcher", "ERROR") as logs:
+            w.ensure_paired()
+        self.assertIn("External Device Manager", logs.output[0])
 
 
 if __name__ == "__main__":

@@ -38,19 +38,13 @@ curl -fsSL -o .env https://raw.githubusercontent.com/cpeoples/samsung-remote-blo
 docker compose run --rm blocker discover --scan 192.168.0.0/24
 ```
 
-**Pair.** Accept the Allow prompt on the TV. The token is saved in the container's `data` volume.
-
-```bash
-docker compose run --rm blocker pair
-```
-
 **Optional: Plex auto-resume.** Set `PLEX_URL` in `.env`, then link a token at [plex.tv/link](https://plex.tv/link) using the code this prints (see [Plex token](#plex-token)):
 
 ```bash
 docker compose run --rm blocker plex-login
 ```
 
-**Start it.**
+**Start it, then press Allow on the TV.** The first time the blocker reaches the TV it asks to pair; the TV shows an Allow prompt for 60 seconds. If nobody answers, blocking still works, and it asks again the next time the TV comes on. The token is saved in the `data` volume. (`docker compose run --rm blocker pair` does the same thing by hand.)
 
 ```bash
 docker compose up -d && docker compose logs -f
@@ -104,12 +98,34 @@ The token can also come from these sources, checked in this order:
 |---|---|
 | `PLEX_TOKEN` | Quick tests. Anyone who can run `docker inspect` on the host can read it |
 | `PLEX_TOKEN_FILE` | You already have a token. Point it at a [Compose secret](https://docs.docker.com/compose/how-tos/use-secrets/) in `/run/secrets/`; see [`stack.example.yml`](stack.example.yml) |
-| `PLEX_PREFERENCES` | The blocker runs on the same host as Plex Media Server. Mount its `Preferences.xml` read-only (see `docker-compose.yml`). That token has the server owner's full rights, so prefer `plex-login` |
+| `PLEX_PREFERENCES` | The blocker runs on the same host as Plex Media Server. Mount its config folder read-only (see `docker-compose.yml`); mount the folder rather than the file, because Plex replaces the file when it saves. That token has the server owner's full rights, so prefer `plex-login` |
 
 <details>
 <summary><b>Full stack file, or plain <code>docker run</code></b></summary>
 
-[`stack.example.yml`](stack.example.yml) spells out every setting inline instead of using `.env`, which suits Portainer and similar UIs. The image is on both GHCR and Docker Hub; `cpeoples/samsung-remote-blocker` works anywhere `ghcr.io/cpeoples/samsung-remote-blocker` does. Without Compose:
+[`stack.example.yml`](stack.example.yml) spells out every setting inline instead of using `.env`, which suits Portainer and similar UIs. The image is on both GHCR and Docker Hub; `cpeoples/samsung-remote-blocker` works anywhere `ghcr.io/cpeoples/samsung-remote-blocker` does.
+
+In Portainer, paste it under **Stacks › Add stack › Web editor**, deploy, and press Allow on the TV when it asks. Nothing needs to be run in a console.
+
+**More than one TV:** run one blocker per TV, each with its own `TV_IP`. They can share the `data` volume; pairing tokens are stored per TV.
+
+```yaml
+services:
+  living-room:
+    image: cpeoples/samsung-remote-blocker:latest
+    restart: unless-stopped
+    environment: {TV_IP: 192.168.0.110, PLEX_URL: "http://192.168.0.20:32400"}
+    volumes: [data:/data]
+  bedroom:
+    image: cpeoples/samsung-remote-blocker:latest
+    restart: unless-stopped
+    environment: {TV_IP: 192.168.0.111, PLEX_URL: "http://192.168.0.20:32400"}
+    volumes: [data:/data]
+volumes:
+  data:
+```
+
+Without Compose:
 
 ```bash
 docker volume create srb-data
@@ -130,7 +146,7 @@ The image's entrypoint is the CLI, so `docker compose run --rm blocker <command>
 | Command | |
 |---|---|
 | `watch` | Run the blocker (default) |
-| `pair` | Pair with the TV |
+| `pair` | Pair with the TV now instead of waiting for the blocker to ask |
 | `discover [--scan CIDR] [--json]` | Find Samsung TVs. Without `--scan` it uses SSDP, which needs `network_mode: host` in Docker |
 | `app <id-or-slug>...` | Show an app's status, e.g. `app netflix 3201512006963` |
 | `apps` | List installed apps (some firmware never answers) |
@@ -183,9 +199,9 @@ Any other app works by ID, e.g. `BLOCKED_APPS=netflix,3201234567890:Some App`. T
 ## Troubleshooting
 
 <details>
-<summary><b><code>pair</code> hangs or is refused</b></summary>
+<summary><b>No Allow prompt, or pairing was denied</b></summary>
 
-Look for the Allow prompt on the TV. If it was denied before, remove the device under **Settings › General › External Device Manager › Device Connection Manager › Device List** and try again.
+The prompt only shows while the TV is on. If you missed it, the blocker asks again the next time the TV comes on, or run `pair` to ask now. If it was denied, remove the device under **Settings › General › External Device Manager › Device Connection Manager › Device List** and restart the container.
 
 </details>
 
