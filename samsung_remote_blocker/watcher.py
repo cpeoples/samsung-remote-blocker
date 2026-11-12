@@ -22,6 +22,8 @@ OFFLINE_AFTER = 3
 # Plex checks while resuming, and the wait between them.
 RESUME_TRIES = 6
 RESUME_CHECK_SECONDS = 1.5
+# Past this many seconds since leaving Plex, a blocked app was opened on purpose; don't resume.
+LAUNCH_GRACE = 30.0
 
 
 class Watcher:
@@ -42,6 +44,7 @@ class Watcher:
         self.allowed = dict(settings.allowed)
         self.last_allowed: str | None = None
         self.last_playing: float | None = None
+        self._plex_left: float | None = None
         self._last_plex_poll: float | None = None
         self._tv_failures = 0
         self._plex_online = True
@@ -103,7 +106,13 @@ class Watcher:
                 self.last_allowed = app_id
                 log.info("Now watching %s", name)
 
-        self._track_plex()
+        # Slow apps like Prime Video take seconds to show up, so remember when Plex left the screen.
+        plex_visible = any((statuses.get(a) or {}).get("visible") for a in PLEX_APP_IDS)
+        if plex_visible:
+            self._plex_left = None
+            self._track_plex()
+        elif self._plex_left is None and self.last_allowed in PLEX_APP_IDS:
+            self._plex_left = self.clock()
 
         for app_id, name in self.blocked.items():
             if (statuses.get(app_id) or {}).get("visible"):
@@ -147,12 +156,15 @@ class Watcher:
 
     def _evict(self, app_id: str, name: str) -> None:
         target = self.last_allowed
+        now = self.clock()
+        left = self._plex_left if self._plex_left is not None else now
         resume = (
             self.settings.resume
             and self.plex is not None
             and target in PLEX_APP_IDS
             and self.last_playing is not None
-            and self.clock() - self.last_playing <= self.settings.resume_window
+            and left - self.last_playing <= self.settings.resume_window
+            and now - left <= LAUNCH_GRACE
         )
         try:
             if target:

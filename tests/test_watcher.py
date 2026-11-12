@@ -138,6 +138,30 @@ class WatcherTest(unittest.TestCase):
         w.step()
         self.assertNotIn(("key", "KEY_PLAY"), tv.calls)
 
+    def test_resumes_after_a_slow_app_launch(self):
+        tv = FakeTV(visible={PLEX})
+        w, clock = watcher(tv, FakePlex("playing"))
+        w.step()
+        w.plex.state = "paused"
+        clock.now += 1
+        tv.visible = set()  # Plex has backgrounded; the blocked app is still loading
+        w.step()
+        clock.now += 6
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertIn(("key", "KEY_PLAY"), tv.calls)
+
+    def test_does_not_resume_long_after_leaving_plex(self):
+        tv = FakeTV(visible={PLEX})
+        w, clock = watcher(tv, FakePlex("playing"))
+        w.step()
+        tv.visible = set()
+        w.step()
+        clock.now += 60
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertNotIn(("key", "KEY_PLAY"), tv.calls)
+
     def test_goes_home_without_an_allowed_app(self):
         tv = FakeTV(visible={NETFLIX})
         w, _ = watcher(tv)
