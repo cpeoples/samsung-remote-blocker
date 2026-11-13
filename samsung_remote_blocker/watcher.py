@@ -45,6 +45,7 @@ class Watcher:
         self.last_allowed: str | None = None
         self.last_playing: float | None = None
         self._media_left: float | None = None
+        self._media_seen: float | None = None
         self._media_state: str | None = None
         self._position: tuple[str | None, int] | None = None  # (item ID, offset ms) last seen playing
         self._last_media_poll: float | None = None
@@ -105,6 +106,7 @@ class Watcher:
         return self.servers.get(self.last_allowed) if self.last_allowed else None
 
     def step(self) -> None:
+        started = self.clock()
         statuses = {app_id: self.tv.app(app_id) for app_id in {**self.allowed, **self.blocked}}
         self._forget_uninstalled(statuses)
 
@@ -114,13 +116,14 @@ class Watcher:
                 self._position = None
                 log.info("Now watching %s", name)
 
-        # Slow apps like Prime Video take seconds to show up, so remember when the media app left the screen.
+        # Time from when the media app was last seen; the TV can stall for seconds while an app launches.
         if self.server:
             if (statuses.get(self.last_allowed) or {}).get("visible"):
                 self._media_left = None
+                self._media_seen = started
                 self._track_playback()
             elif self._media_left is None:
-                self._media_left = self.clock()
+                self._media_left = self._media_seen if self._media_seen is not None else started
 
         for app_id, name in self.blocked.items():
             if (statuses.get(app_id) or {}).get("visible"):

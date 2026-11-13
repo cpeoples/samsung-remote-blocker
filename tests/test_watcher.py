@@ -152,6 +152,7 @@ class WatcherTest(unittest.TestCase):
         w.step()
         w.plex.state = "paused"
         clock.now += 10
+        w.step()  # still on screen, paused
         tv.visible = {NETFLIX}
         w.step()
         self.assertNotIn(("key", "KEY_PLAY"), tv.calls)
@@ -200,6 +201,21 @@ class WatcherTest(unittest.TestCase):
         tv.visible = set()  # Plex has backgrounded; the blocked app is still loading
         w.step()
         clock.now += 6
+        tv.visible = {NETFLIX}
+        w.step()
+        self.assertIn(("key", "KEY_PLAY"), tv.calls)
+
+    def test_resumes_when_the_tv_stalls_while_the_blocked_app_launches(self):
+        tv = FakeTV(visible={PLEX})
+        w, clock = watcher(tv, FakePlex("playing"))
+        w.step()
+        app = tv.app
+
+        def stalling(app_id):
+            clock.now += 2  # the TV is slow while Netflix loads
+            return app(app_id)
+
+        tv.app = stalling
         tv.visible = {NETFLIX}
         w.step()
         self.assertIn(("key", "KEY_PLAY"), tv.calls)
