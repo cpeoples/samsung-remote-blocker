@@ -198,14 +198,22 @@ Tokens go in the current directory unless `DATA_DIR` is set.
 
 Any other app works by ID, e.g. `BLOCKED_APPS=netflix,3201234567890:Some App`. To add an app to the list, or to verify one on your model:
 
-1. Check the ID on your TV with `app <id>`. A status with the expected `name` confirms it; `not installed` means that ID doesn't exist on your TV.
-2. Add it to [`apps.json`](samsung_remote_blocker/apps.json), mapping each ID to the models it was verified on. IDs vary by region, so an app can list several; the ones a TV doesn't have are ignored after the first poll.
+1. Find the ID in Samsung's app store by name, or confirm one you already have:
+
+   ```sh
+   curl -s 'https://vdapi.samsung.com/tvs/tvpersonalize/api/tvapps/appserver/listAll?countryCode=US&languageCode=en&search=hulu' | jq '.data.tvAppSearch[] | {appId, appName}'
+   curl -s 'https://vdapi.samsung.com/tvs/tvpersonalize/api/tvapps/appserver/listAll?countryCode=US&languageCode=en&appId=3201601007625' | jq '.data.allCount'
+   ```
+
+   Search matches loosely (`plex` also finds Duplex), so pick the exact name. Set `countryCode` to your country. `allCount` is `0` for IDs the store doesn't list, which includes built-in apps like Samsung TV Plus; find those on the TV instead.
+2. Check the ID on your TV with `app <id>`. A status with the expected `name` confirms it; `not installed` means that ID doesn't exist on your TV.
+3. Add it to [`apps.json`](samsung_remote_blocker/apps.json), mapping each ID to the models it was verified on. IDs vary by region, so an app can list several; the ones a TV doesn't have are ignored after the first poll.
 
    ```json
    "hulu": {"name": "Hulu", "ids": {"3201601007625": ["UN65DU8000FXZA"]}}
    ```
 
-3. Open a pull request.
+4. Open a pull request.
 
 ## Troubleshooting
 
