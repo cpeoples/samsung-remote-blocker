@@ -15,6 +15,7 @@ log = logging.getLogger(__name__)
 
 DEFAULT_BLOCKED = "netflix,disney,prime,hulu,youtube,tvplus"
 DEFAULT_ALLOWED = "plex,jellyfin"
+DEFAULT_INTERRUPT_ONLY = "tvplus"
 
 
 class ConfigError(Exception):
@@ -59,6 +60,8 @@ class Settings:
     plex_token: str | None = field(default=None, repr=False)  # keep it out of logs and tracebacks
     jellyfin_url: str | None = None
     jellyfin_api_key: str | None = field(default=None, repr=False)
+    interrupt_only: frozenset[str] = frozenset()  # blocked only when they replace an allowed app
+    override_seconds: float = 0.0  # reopening within this long after a bounce lets it through; 0 is off
 
     @property
     def tv_token_file(self) -> Path:
@@ -71,14 +74,14 @@ class Settings:
         return self.tv_ip
 
 
-def _float(env: Mapping[str, str], name: str, default: float) -> float:
+def _float(env: Mapping[str, str], name: str, default: float, allow_zero: bool = False) -> float:
     raw = env.get(name) or default
     try:
         value = float(raw)
     except ValueError:
         raise ConfigError(f"{name} must be a number, got {raw!r}") from None
-    if value <= 0:
-        raise ConfigError(f"{name} must be positive, got {raw!r}")
+    if value < 0 or (value == 0 and not allow_zero):
+        raise ConfigError(f"{name} must be {'zero or more' if allow_zero else 'positive'}, got {raw!r}")
     return value
 
 
@@ -142,4 +145,7 @@ def load(env: Mapping[str, str] = os.environ) -> Settings:
         plex_token=read_plex_token(env, plex_token_file),
         jellyfin_url=(env.get("JELLYFIN_URL") or "").rstrip("/") or None,
         jellyfin_api_key=(env.get("JELLYFIN_API_KEY") or "").strip() or None,
+        # Unset means the default; set but empty means none.
+        interrupt_only=frozenset(parse_apps(env.get("INTERRUPT_ONLY_APPS", DEFAULT_INTERRUPT_ONLY))),
+        override_seconds=_float(env, "OVERRIDE_SECONDS", 0, allow_zero=True),
     )

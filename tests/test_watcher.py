@@ -8,12 +8,13 @@ from samsung_remote_blocker.media import Session
 from samsung_remote_blocker.watcher import Watcher
 
 NETFLIX, HULU, PLEX, JELLYFIN = "3201907018807", "3201601007625", "3201512006963", "3202007021208"
+TVPLUS = "3202405035480"
 
 
 class FakeTV:
     ip = "192.168.0.110"
 
-    def __init__(self, visible=(), installed=(NETFLIX, HULU, PLEX, JELLYFIN), paired=True):
+    def __init__(self, visible=(), installed=(NETFLIX, HULU, PLEX, JELLYFIN, TVPLUS), paired=True):
         self.visible = set(visible)
         self.installed = set(installed)
         self.calls = []
@@ -337,6 +338,17 @@ class WatcherTest(unittest.TestCase):
             w.run()
         self.assertEqual(sum("unreachable" in line for line in logs.output), 1)
 
+    def test_run_logs_the_interrupt_only_and_override_rules(self):
+        def stop(seconds):
+            raise KeyboardInterrupt
+
+        env = {"BLOCKED_APPS": "netflix,tvplus", "OVERRIDE_SECONDS": "10"}
+        w = Watcher(load(env), FakeTV(), sleep=stop)
+        with self.assertLogs("samsung_remote_blocker.watcher") as logs, self.assertRaises(KeyboardInterrupt):
+            w.run()
+        self.assertTrue(any("Samsung TV Plus only when it opens over" in line for line in logs.output))
+        self.assertTrue(any("within 10 s is let through" in line for line in logs.output))
+
     def test_pairs_once_when_unpaired(self):
         tv = FakeTV(paired=False)
         w, _ = watcher(tv)
@@ -383,6 +395,116 @@ class WatcherTest(unittest.TestCase):
         with self.assertLogs("samsung_remote_blocker.watcher", "ERROR") as logs:
             w.ensure_paired()
         self.assertIn("can't be saved", logs.output[0])
+
+
+def opening(tv, w, clock, app, after=0.0):
+    """Advance the clock, put `app` on screen and poll."""
+    clock.now += after
+    tv.visible = {app}
+    w.step()
+
+
+class InterruptOnlyTest(unittest.TestCase):
+    def setUp(self):
+        self.tv = FakeTV()
+        self.w, self.clock = watcher(self.tv, FakePlex("playing"), BLOCKED_APPS="netflix,tvplus")
+
+    def bounced(self, app):
+        return ("launch", PLEX) in self.tv.calls and ("close", app) in self.tv.calls
+
+    def test_blocked_when_it_replaces_plex(self):
+        opening(self.tv, self.w, self.clock, PLEX)
+        opening(self.tv, self.w, self.clock, TVPLUS, after=1)
+        self.assertTrue(self.bounced(TVPLUS))
+
+    def test_blocked_after_a_slow_launch_over_plex(self):
+        opening(self.tv, self.w, self.clock, PLEX)
+        self.tv.visible = set()
+        self.clock.now += 1
+        self.w.step()
+        opening(self.tv, self.w, self.clock, TVPLUS, after=7)
+        self.assertTrue(self.bounced(TVPLUS))
+
+    def test_allowed_when_opened_from_home(self):
+        opening(self.tv, self.w, self.clock, PLEX)
+        self.tv.visible = set()  # Home
+        self.clock.now += 1
+        self.w.step()
+        with self.assertLogs("samsung_remote_blocker.watcher", "INFO") as logs:
+            opening(self.tv, self.w, self.clock, TVPLUS, after=30)
+        self.assertEqual(self.tv.calls, [])
+        self.assertIn("no allowed app was on screen", logs.output[0])
+
+    def test_allowed_when_the_tv_starts_in_it(self):
+        opening(self.tv, self.w, self.clock, TVPLUS)
+        self.assertEqual(self.tv.calls, [])
+
+    def test_stays_allowed_and_logs_once(self):
+        with self.assertLogs("samsung_remote_blocker.watcher", "INFO") as logs:
+            for _ in range(5):
+                opening(self.tv, self.w, self.clock, TVPLUS, after=1)
+        self.assertEqual(self.tv.calls, [])
+        self.assertEqual(len(logs.output), 1)
+
+    def test_blocked_again_once_plex_is_back(self):
+        opening(self.tv, self.w, self.clock, TVPLUS)
+        opening(self.tv, self.w, self.clock, PLEX, after=60)
+        opening(self.tv, self.w, self.clock, TVPLUS, after=1)
+        self.assertTrue(self.bounced(TVPLUS))
+
+    def test_other_blocked_apps_are_blocked_everywhere(self):
+        opening(self.tv, self.w, self.clock, NETFLIX)
+        self.assertEqual(self.tv.calls, [("key", "KEY_HOME"), ("close", NETFLIX)])
+
+    def test_can_be_turned_off(self):
+        w, clock = watcher(self.tv, BLOCKED_APPS="tvplus", INTERRUPT_ONLY_APPS="")
+        opening(self.tv, w, clock, TVPLUS)
+        self.assertIn(("close", TVPLUS), self.tv.calls)
+
+
+class OverrideTest(unittest.TestCase):
+    def setUp(self):
+        self.tv = FakeTV()
+        self.w, self.clock = watcher(self.tv, FakePlex("playing"), OVERRIDE_SECONDS="10")
+        opening(self.tv, self.w, self.clock, PLEX)
+        opening(self.tv, self.w, self.clock, NETFLIX, after=1)  # bounced; Plex is back on screen
+        self.tv.calls.clear()
+        self.clock.now += 0.25
+        self.w.step()
+
+    def test_reopening_soon_lets_it_through(self):
+        with self.assertLogs("samsung_remote_blocker.watcher", "INFO") as logs:
+            opening(self.tv, self.w, self.clock, NETFLIX, after=3)
+        self.assertEqual(self.tv.calls, [])
+        self.assertIn("opened again within 10 s", logs.output[0])
+
+    def test_reopening_late_is_blocked(self):
+        opening(self.tv, self.w, self.clock, NETFLIX, after=30)
+        self.assertIn(("close", NETFLIX), self.tv.calls)
+
+    def test_override_ends_when_plex_is_back(self):
+        opening(self.tv, self.w, self.clock, NETFLIX, after=3)
+        opening(self.tv, self.w, self.clock, PLEX, after=60)
+        opening(self.tv, self.w, self.clock, NETFLIX, after=1)
+        self.assertIn(("close", NETFLIX), self.tv.calls)
+
+    def test_still_on_screen_after_the_bounce_is_not_a_reopen(self):
+        # The TV can report the bounced app as visible for a poll or two before Plex is in front.
+        w, clock = watcher(self.tv, FakePlex("playing"), OVERRIDE_SECONDS="10")
+        opening(self.tv, w, clock, PLEX)
+        self.tv.launch = lambda app_id: self.tv.calls.append(("launch", app_id))
+        opening(self.tv, w, clock, NETFLIX, after=1)
+        opening(self.tv, w, clock, NETFLIX, after=0.25)
+        self.assertEqual(self.tv.calls.count(("close", NETFLIX)), 2)
+
+    def test_off_by_default(self):
+        w, clock = watcher(self.tv, FakePlex("playing"))
+        opening(self.tv, w, clock, PLEX)
+        opening(self.tv, w, clock, NETFLIX, after=1)
+        clock.now += 0.25
+        w.step()
+        opening(self.tv, w, clock, NETFLIX, after=3)
+        self.assertEqual(self.tv.calls.count(("close", NETFLIX)), 2)
 
 
 if __name__ == "__main__":

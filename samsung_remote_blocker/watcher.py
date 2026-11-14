@@ -24,6 +24,8 @@ RESUME_TRIES = 6
 RESUME_CHECK_SECONDS = 1.5
 # Past this many seconds since leaving the media app, a blocked app was opened on purpose; don't resume.
 LAUNCH_GRACE = 30.0
+# An allowed app on screen this recently means an interrupt-only app replaced it; covers slow launches.
+INTERRUPT_WINDOW = 10.0
 
 
 class Watcher:
@@ -46,6 +48,9 @@ class Watcher:
         self.last_playing: float | None = None
         self._media_left: float | None = None
         self._media_seen: float | None = None
+        self._allowed_seen: float | None = None  # last poll with any allowed app on screen
+        self._bounced: dict[str, float] = {}  # blocked app ID -> when it was last sent back
+        self._let_through: set[str] = set()  # blocked apps left alone until an allowed app is back
         self._media_state: str | None = None
         self._position: tuple[str | None, int] | None = None  # (item ID, offset ms) last seen playing
         self._last_media_poll: float | None = None
@@ -65,6 +70,11 @@ class Watcher:
         else:
             names = sorted({s.name for s in self.servers.values()})
             log.info("Resuming %s", " and ".join(names) if names else "nothing; no media server is set up")
+        interrupt_only = sorted({self.blocked[a] for a in self.settings.interrupt_only if a in self.blocked})
+        if interrupt_only:
+            log.info("Blocking %s only when it opens over an allowed app", ", ".join(interrupt_only))
+        if self.settings.override_seconds:
+            log.info("A blocked app opened again within %g s is let through", self.settings.override_seconds)
         while True:
             try:
                 self.step()
@@ -116,6 +126,10 @@ class Watcher:
                 self._position = None
                 log.info("Now watching %s", name)
 
+        if any((statuses.get(app_id) or {}).get("visible") for app_id in self.allowed):
+            self._allowed_seen = started
+            self._let_through.clear()
+
         # Time from when the media app was last seen; the TV can stall for seconds while an app launches.
         if self.server:
             if (statuses.get(self.last_allowed) or {}).get("visible"):
@@ -126,8 +140,28 @@ class Watcher:
                 self._media_left = self._media_seen if self._media_seen is not None else started
 
         for app_id, name in self.blocked.items():
-            if (statuses.get(app_id) or {}).get("visible"):
+            if (statuses.get(app_id) or {}).get("visible") and self._should_block(app_id, name, started):
                 self._evict(app_id, name)
+                self._bounced[app_id] = self.clock()
+
+    def _should_block(self, app_id: str, name: str, now: float) -> bool:
+        if app_id in self._let_through:
+            return False
+        # Only a reopen after the allowed app was back on screen counts, not a slow close of the first one.
+        bounced = self._bounced.get(app_id)
+        override = self.settings.override_seconds
+        reopened = bounced is not None and self._allowed_seen is not None and self._allowed_seen > bounced
+        if override and reopened and now - bounced <= override:
+            log.info("%s opened again within %g s; letting it through", name, override)
+            del self._bounced[app_id]
+            self._let_through.add(app_id)
+            return False
+        interrupted = self._allowed_seen is not None and now - self._allowed_seen <= INTERRUPT_WINDOW
+        if app_id in self.settings.interrupt_only and not interrupted:
+            log.info("%s opened while no allowed app was on screen; letting it through", name)
+            self._let_through.add(app_id)
+            return False
+        return True
 
     def _forget_uninstalled(self, statuses: dict[str, dict | None]) -> None:
         # Registry entries list every regional ID; drop the ones this TV lacks so they

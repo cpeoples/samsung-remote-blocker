@@ -70,6 +70,12 @@ Plex on the TV stops playback when another app opens, and near the end of an epi
 
 When the TV is off, the blocker logs it once and keeps retrying, then picks up where it left off when the TV comes back.
 
+### Opening a blocked app on purpose
+
+The TV doesn't report which remote button was pressed, only which app is on screen. So apps in `INTERRUPT_ONLY_APPS` (Samsung TV Plus by default) are blocked only when they replace Plex or Jellyfin. Press the TV Plus button during a movie and you're sent back; go Home first and open TV Plus, and it's left alone. The same goes for a TV that turns on in TV Plus.
+
+`OVERRIDE_SECONDS` lets any blocked app through on purpose: open it again within that many seconds of being sent back, and it stays until Plex or Jellyfin is opened again. It's off by default, since anyone who learns it can use it.
+
 ## Configuration
 
 Everything is an environment variable, set in `.env`, in the shell, or in the stack file. Values are checked at startup, and a bad one stops the container with a message saying which.
@@ -79,6 +85,8 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 | `TV_IP` | **required** | The TV's IP address. It must be an IP, since Plex and Jellyfin identify the TV by IP |
 | `BLOCKED_APPS` | `netflix,disney,prime,hulu,youtube,tvplus` | Slugs from [`apps.json`](samsung_remote_blocker/apps.json) or raw `id:Name` pairs |
 | `ALLOWED_APPS` | `plex,jellyfin` | Apps to return to, same format |
+| `INTERRUPT_ONLY_APPS` | `tvplus` | Blocked apps that are sent back only when they replace an allowed app. Set it empty to block them everywhere. See [Opening a blocked app on purpose](#opening-a-blocked-app-on-purpose) |
+| `OVERRIDE_SECONDS` | `0` (off) | Opening a blocked app again within this many seconds of being sent back lets it through |
 | `PLEX_URL` | | e.g. `http://192.168.0.20:32400`. Without it, Plex comes back but isn't resumed |
 | `PLEX_TOKEN` | | See [Plex token](#plex-token) |
 | `PLEX_TOKEN_FILE` | `/data/.plex-token` | Where the Plex token is read from and where `plex-login` saves it |

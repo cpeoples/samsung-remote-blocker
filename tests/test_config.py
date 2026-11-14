@@ -62,6 +62,18 @@ class LoadTest(unittest.TestCase):
         with self.assertRaisesRegex(ConfigError, "RESUME"):
             load({"RESUME": "maybe"})
 
+    def test_interrupt_only_defaults_to_tv_plus_and_can_be_emptied(self):
+        self.assertEqual(load({}).interrupt_only, {"3202405035480"})
+        self.assertEqual(load({"INTERRUPT_ONLY_APPS": ""}).interrupt_only, frozenset())
+        self.assertIn("3201907018807", load({"INTERRUPT_ONLY_APPS": "netflix"}).interrupt_only)
+
+    def test_override_is_off_unless_set(self):
+        self.assertEqual(load({}).override_seconds, 0)
+        self.assertEqual(load({"OVERRIDE_SECONDS": "0"}).override_seconds, 0)
+        self.assertEqual(load({"OVERRIDE_SECONDS": "10"}).override_seconds, 10)
+        with self.assertRaisesRegex(ConfigError, "OVERRIDE_SECONDS must be zero or more"):
+            load({"OVERRIDE_SECONDS": "-1"})
+
     def test_token_is_not_in_repr(self):
         self.assertNotIn("s3cret", repr(load({"PLEX_TOKEN": "s3cret"})))
         self.assertNotIn("s3cret", repr(load({"JELLYFIN_API_KEY": "s3cret"})))
