@@ -9,7 +9,7 @@ name: samsung-remote-blocker
 
 services:
   blocker:
-    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.8
+    image: ghcr.io/cpeoples/samsung-remote-blocker:latest  # or pin a release, e.g. :0.1.9
     restart: unless-stopped
     environment:
       TV_IP: 192.168.0.110
