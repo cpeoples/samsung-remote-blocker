@@ -13,7 +13,7 @@ services:
     restart: unless-stopped
     environment:
       TV_IP: 192.168.0.110
-      BLOCKED_APPS: netflix,disney,prime,hulu,youtube
+      BLOCKED_APPS: netflix,disney,prime,hulu,youtube,tvplus
       ALLOWED_APPS: plex,jellyfin
       # Without PLEX_URL the blocker still returns to Plex, but doesn't press Play.
       PLEX_URL: http://192.168.0.20:32400

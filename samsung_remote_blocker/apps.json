@@ -5,5 +5,6 @@
   "disney": {"name": "Disney+", "ids": {"3201901017640": ["UN65DU8000FXZA"]}},
   "prime": {"name": "Prime Video", "ids": {"3201910019365": ["UN65DU8000FXZA"], "3201512006785": []}},
   "hulu": {"name": "Hulu", "ids": {"3201601007625": ["UN65DU8000FXZA"]}},
-  "youtube": {"name": "YouTube", "ids": {"111299001912": ["UN65DU8000FXZA"]}}
+  "youtube": {"name": "YouTube", "ids": {"111299001912": ["UN65DU8000FXZA"]}},
+  "tvplus": {"name": "Samsung TV Plus", "ids": {"3202405035480": ["UN65DU8000FXZA"]}}
 }

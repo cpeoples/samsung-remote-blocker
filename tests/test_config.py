@@ -33,6 +33,7 @@ class LoadTest(unittest.TestCase):
         self.assertIsNone(s.tv_ip)
         self.assertIn("3201907018807", s.blocked)
         self.assertIn("111299001912", s.blocked)  # YouTube
+        self.assertIn("3202405035480", s.blocked)  # Samsung TV Plus
         self.assertEqual(set(s.allowed.values()), {"Plex", "Jellyfin"})
         self.assertEqual(s.poll_seconds, 0.25)
         with self.assertRaises(ConfigError):

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" role="img" aria-labelledby="title desc">
   <title id="title">Samsung Remote Blocker</title>
-  <desc id="desc">A Samsung TV remote whose Netflix, Prime Video, Disney+, Hulu and YouTube buttons are blocked.</desc>
+  <desc id="desc">A Samsung TV remote whose Netflix, Prime Video, Disney+, Hulu, YouTube and Samsung TV Plus buttons are blocked.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#070b18"/>
@@ -117,14 +117,15 @@
     <use href="#blocked" x="66" y="378"/>
     <use href="#blocked" x="122" y="378"/>
     <use href="#blocked" x="66" y="410"/>
+    <use href="#blocked" x="122" y="410"/>
     </g>
   </g>
 
   <!-- Copy -->
   <g font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
     <text x="460" y="165" fill="#ffffff" font-size="56" font-weight="800" letter-spacing="-1.5">Samsung Remote Blocker</text>
-    <text x="463" y="212" fill="#c7cdff" font-size="24">Accidentally press <tspan fill="#e50914" font-weight="700">Netflix</tspan>, <tspan fill="#00a8e1" font-weight="700">Prime</tspan>, <tspan fill="#3d7bff" font-weight="700">Disney+</tspan>, <tspan fill="#1ce783" font-weight="700">Hulu</tspan> or <tspan fill="#ff3355" font-weight="700">YouTube</tspan></text>
-    <text x="463" y="243" fill="#c7cdff" font-size="24">and land back in <tspan fill="#e5a00d" font-weight="700">Plex</tspan> or <tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan>.</text>
+    <text x="463" y="212" fill="#c7cdff" font-size="24">Accidentally press <tspan fill="#e50914" font-weight="700">Netflix</tspan>, <tspan fill="#00a8e1" font-weight="700">Prime</tspan>, <tspan fill="#3d7bff" font-weight="700">Disney+</tspan>, <tspan fill="#1ce783" font-weight="700">Hulu</tspan>,</text>
+    <text x="463" y="243" fill="#c7cdff" font-size="24"><tspan fill="#ff3355" font-weight="700">YouTube</tspan> or <tspan fill="#5aa0ff" font-weight="700">TV Plus</tspan> and land back in <tspan fill="#e5a00d" font-weight="700">Plex</tspan> or <tspan fill="#aa5cc3" font-weight="700">Jellyfin</tspan>.</text>
     <text x="463" y="281" fill="#8a90b8" font-size="19">No root, no firmware hacks. One container on your network.</text>
   </g>
   <g font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="17">

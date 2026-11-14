@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/banner.svg" alt="Samsung Remote Blocker: accidentally press Netflix, Prime, Disney+, Hulu or YouTube and land back in Plex or Jellyfin" width="100%">
+  <img src="docs/banner.svg" alt="Samsung Remote Blocker: accidentally press Netflix, Prime, Disney+, Hulu, YouTube or TV Plus and land back in Plex or Jellyfin" width="100%">
 </p>
 
 <p align="center">
@@ -11,7 +11,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-22c55e" alt="MIT license"></a>
 </p>
 
-Samsung remotes have Netflix, Prime Video, Disney+, Hulu and YouTube buttons that a kid, a guest, or the couch cushion will press in the middle of your movie. Samsung Remote Blocker watches the TV from a server on your network. When a blocked app opens, it puts you back where you were, presses Play if something was playing, and closes the blocked app.
+Samsung remotes have Netflix, Prime Video, Disney+, Hulu, YouTube and Samsung TV Plus buttons that a kid, a guest, or the couch cushion will press in the middle of your movie. Samsung Remote Blocker watches the TV from a server on your network. When a blocked app opens, it puts you back where you were, presses Play if something was playing, and closes the blocked app.
 
 It doesn't root the TV or install anything on it; it only talks to the TV's local network API.
 
@@ -77,7 +77,7 @@ Everything is an environment variable, set in `.env`, in the shell, or in the st
 | Variable | Default | |
 |---|---|---|
 | `TV_IP` | **required** | The TV's IP address. It must be an IP, since Plex and Jellyfin identify the TV by IP |
-| `BLOCKED_APPS` | `netflix,disney,prime,hulu,youtube` | Slugs from [`apps.json`](samsung_remote_blocker/apps.json) or raw `id:Name` pairs |
+| `BLOCKED_APPS` | `netflix,disney,prime,hulu,youtube,tvplus` | Slugs from [`apps.json`](samsung_remote_blocker/apps.json) or raw `id:Name` pairs |
 | `ALLOWED_APPS` | `plex,jellyfin` | Apps to return to, same format |
 | `PLEX_URL` | | e.g. `http://192.168.0.20:32400`. Without it, Plex comes back but isn't resumed |
 | `PLEX_TOKEN` | | See [Plex token](#plex-token) |
@@ -192,6 +192,7 @@ Tokens go in the current directory unless `DATA_DIR` is set.
 | `disney` | Disney+ | UN65DU8000FXZA |
 | `hulu` | Hulu | UN65DU8000FXZA |
 | `youtube` | YouTube | UN65DU8000FXZA |
+| `tvplus` | Samsung TV Plus | UN65DU8000FXZA |
 | `plex` | Plex | UN65DU8000FXZA |
 | `jellyfin` | Jellyfin | UN65DU8000FXZA |
 
@@ -272,7 +273,6 @@ To pick the user yourself, set `PUID` and `PGID`. If you set `user:` in the stac
 ## Limitations
 
 - It's not a true disable; the blocked app is visible for a moment.
-- Samsung TV Plus is built into the TV and doesn't show up in the applications API (none of the published IDs answer on a DU8000), so its button can't be blocked yet. If you find an ID that works with `app <id>`, please open an issue.
 - HDMI inputs and live TV aren't apps, so there's nothing to return to; the blocker goes Home.
 - Auto-resume supports Plex and Jellyfin.
 
